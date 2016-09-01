@@ -10,9 +10,9 @@ from cs224d.data_utils import StanfordSentiment
 if __name__ == "__main__":
     print("Initialize dataset")
     dataset = StanfordSentiment(path='../assignment1/cs224d/datasets/stanfordSentimentTreebank')
-    print(len(dataset.tokens()))
+    print("Dictionary size=%d" % len(dataset.tokens()))
 
-    dict_size = 10
+    dict_size = len(dataset.tokens())
     vec_size = 100
     batch_size = 50
     num_sampled = 20

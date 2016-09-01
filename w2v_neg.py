@@ -3,7 +3,6 @@ import math
 import numpy as np
 
 import sys
-sys.path.append("../assignment1")
 
 from cs224d.data_utils import StanfordSentiment
 
@@ -12,12 +11,12 @@ def generate_batches(dataset, batch_size, num_skips, skip_window):
     """
     Infinitely yield batches for given size and epoch number
     """
-    batch = 
+    batch = np.ndarray()
 
 
 if __name__ == "__main__":
     print("Initialize dataset")
-    dataset = StanfordSentiment(path='../assignment1/cs224d/datasets/stanfordSentimentTreebank')
+    dataset = StanfordSentiment()
     print("Dictionary size=%d" % len(dataset.tokens()))
 
     dict_size = len(dataset.tokens())

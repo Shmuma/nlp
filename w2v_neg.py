@@ -3,6 +3,7 @@ import math
 import numpy as np
 
 import sys
+import collections
 
 from cs224d.data_utils import StanfordSentiment
 
@@ -11,8 +12,24 @@ def generate_batches(dataset, batch_size, num_skips, skip_window):
     """
     Infinitely yield batches for given size and epoch number
     """
-    batch = np.ndarray()
+    assert isinstance(dataset, StanfordSentiment)
 
+    batch = np.ndarray(shape=(batch_size,), dtype=np.int32)
+    labels = np.ndarray(shape=(batch_size,), dtype=np.int32)
+    tokens = dataset.tokens()
+    ofs = 0
+
+    while True:
+        center, ctx_words = dataset.getRandomContext(num_skips)
+        c_id = tokens[center]
+        for ctx_word in ctx_words:
+            ctx_id = tokens[ctx_word]
+            batch[ofs] = ctx_id
+            labels[ofs] = c_id
+            ofs += 1
+            if ofs == batch_size:
+                yield batch, labels
+                ofs = 0
 
 if __name__ == "__main__":
     print("Initialize dataset")
@@ -50,5 +67,7 @@ if __name__ == "__main__":
     with tf.Session() as session:
         init.run()
         print("Initialized")
+        
+        generate_batches(dataset, 5, 2, 3)
 
             

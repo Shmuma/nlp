@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     dict_size = len(dataset.tokens())
     vec_size = 100
-    batch_size = 50
+    batch_size = 128
     num_sampled = 20
     context_size_one = 3
 

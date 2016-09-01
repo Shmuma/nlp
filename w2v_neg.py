@@ -1,10 +1,18 @@
 import tensorflow as tf
 import math
+import numpy as np
 
 import sys
 sys.path.append("../assignment1")
 
 from cs224d.data_utils import StanfordSentiment
+
+
+def generate_batches(dataset, batch_size, num_skips, skip_window):
+    """
+    Infinitely yield batches for given size and epoch number
+    """
+    batch = 
 
 
 if __name__ == "__main__":
@@ -16,6 +24,7 @@ if __name__ == "__main__":
     vec_size = 100
     batch_size = 50
     num_sampled = 20
+    max_steps = 10
 
     embeddings = tf.Variable(tf.random_uniform([dict_size, vec_size], -1.0, 1.0))
     nce_weights = tf.Variable(
@@ -43,3 +52,4 @@ if __name__ == "__main__":
         init.run()
         print("Initialized")
 
+            

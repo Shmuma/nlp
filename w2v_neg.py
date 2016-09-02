@@ -11,11 +11,18 @@ def read_dict(file_name):
         return pickle.load(fd)
 
 
-def build_input_pipeline(input_prefix):
-    ctr_input_files = tf.train.string_input_producer([input_prefix + ".center"])
-    ctx_input_files = tf.train.string_input_producer([input_prefix + ".context"])
+def build_input_pipeline(input_file, batch_size):
+    input_files = tf.train.string_input_producer([input_file])
+    reader = tf.FixedLengthRecordReader(record_bytes=4+4)
+    _, raw_val_t = reader.read(input_files)
+    int_val_t = tf.decode_raw(raw_val_t, tf.int32)
+    center_t, context_t = int_val_t[0], int_val_t[1]
 
-    ctr_reader = tf.FixedLengthRecordReader()
+    center_batch_t, context_batch_t = tf.train.shuffle_batch([center_t, context_t], batch_size,
+                                                             min_after_dequeue=10*batch_size,
+                                                             capacity=20*batch_size,
+                                                             num_threads=2)
+    return center_batch_t, context_batch_t
 
 
 if __name__ == "__main__":
@@ -33,7 +40,7 @@ if __name__ == "__main__":
     dict_size = len(dict_data)
     vec_size = 100
     batch_size = 128
-    num_sampled = 20
+    num_sampled = 10
     log.info("Training params: vec_size=%d, batch=%d, num_neg=%d", vec_size, batch_size, num_sampled)
 
     embeddings = tf.Variable(tf.random_uniform([dict_size, vec_size], -1.0, 1.0))
@@ -41,7 +48,9 @@ if __name__ == "__main__":
         tf.truncated_normal([dict_size, vec_size],
                             stddev=1.0 / math.sqrt(vec_size)))
 
-    build_input_pipeline(args.train)
+    center_batch_t, context_batch_t = build_input_pipeline(args.train, batch_size)
+    # we need to reshape context to add 1 dimension
+    context_batch_t = tf.expand_dims(context_batch_t, 1)
 
     # Placeholders for inputs
     train_inputs_t = tf.placeholder(tf.int32, shape=[batch_size])
@@ -56,22 +65,32 @@ if __name__ == "__main__":
         tf.nn.nce_loss(nce_weights, nce_biases, embed, train_labels_t,
                        num_sampled, dict_size))
 
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=1.0).minimize(loss_t)
+    global_step_t = tf.Variable(0, name='global_step', trainable=False)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss_t, global_step=global_step_t)
 
     init = tf.initialize_all_variables()
 
     with tf.Session() as session:
-        init.run()
+        session.run(init)
 
-        for iter_idx, (batch, labels) in enumerate(generate_batches(dataset, batch_size, context_size_one)):
-            feed_dict = {
-                train_inputs_t: batch,
-                train_labels_t: labels
-            }
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(session, coord)
 
-            _, loss = session.run([optimizer, loss_t], feed_dict=feed_dict)
+        try:
+            while True:
+                batch, labels = session.run([center_batch_t, context_batch_t])
 
-            if iter_idx % 100 == 0:
-                print(iter_idx, loss)
+                feed_dict = {
+                    train_inputs_t: batch,
+                    train_labels_t: labels
+                }
 
-            
+                _, step, loss = session.run([optimizer, global_step_t, loss_t], feed_dict=feed_dict)
+
+                if step % 100 == 0:
+                    print(step, loss)
+        finally:
+            coord.request_stop()
+
+        coord.join(threads)
+

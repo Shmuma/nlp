@@ -1,8 +1,10 @@
+import glob
 import os
 import math
 import pickle
 import argparse
 import logging as log
+import numpy as np
 import tensorflow as tf
 
 
@@ -32,6 +34,7 @@ def get_num_entries(input_file):
 
 if __name__ == "__main__":
     REPORT_EVERY_STEPS = 100
+    SAVE_EMBEDDINGS_EVERY = 1000
 
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -55,6 +58,10 @@ if __name__ == "__main__":
     log.info("Training params: vec_size=%d, batch=%d, num_neg=%d", vec_size, batch_size, num_sampled)
 
     embeddings = tf.Variable(tf.random_uniform([dict_size, vec_size], -1.0, 1.0))
+
+    norm_t = tf.sqrt(tf.reduce_sum(tf.square(embeddings), 1, keep_dims=True))
+    normalized_embeddings_t = embeddings / norm_t
+
     nce_weights = tf.Variable(
         tf.truncated_normal([dict_size, vec_size],
                             stddev=1.0 / math.sqrt(vec_size)))
@@ -118,6 +125,13 @@ if __name__ == "__main__":
 
                     print("epoch=%d, step=%d, loss=%f" % (epoch, step, sum_loss / REPORT_EVERY_STEPS))
                     sum_loss = 0.0
+
+                if step % SAVE_EMBEDDINGS_EVERY == 0:
+                    norm_embeddings, = session.run([normalized_embeddings_t])
+                    existing = glob.glob(args.run + "-*.npy")
+                    np.save(args.run + "-%d" % step, norm_embeddings)
+                    for prev_save in existing:
+                        os.unlink(prev_save)
         finally:
             coord.request_stop()
 

@@ -7,6 +7,9 @@ import logging as log
 import numpy as np
 import tensorflow as tf
 
+from time import time
+from datetime import timedelta
+
 
 def read_dict(file_name):
     with open(file_name, "rb") as fd:
@@ -87,12 +90,15 @@ if __name__ == "__main__":
     tf.scalar_summary('loss_cur', loss_t)
     loss_avg_t = tf.Variable(0.0, name='loss_avg', trainable=False)
     tf.scalar_summary('loss_avg', loss_avg_t)
+    speed_t = tf.Variable(0.0, name="speed", trainable=False)
+    tf.scalar_summary('speed', speed_t)
 
     global_step_t = tf.Variable(0, name='global_step', trainable=False)
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss_t, global_step=global_step_t)
 
     init = tf.initialize_all_variables()
     merged_summaries = tf.merge_all_summaries()
+    time_started = time()
 
     with tf.Session() as session:
         summary_writer = tf.train.SummaryWriter("logs/" + args.run, session.graph)
@@ -116,14 +122,19 @@ if __name__ == "__main__":
 
                 if step % REPORT_EVERY_STEPS == 0:
                     epoch = int(step * batch_size / input_entries)
+                    sec_passed = time() - time_started
+                    speed = step * batch_size / sec_passed
 
                     summary_res, = session.run([merged_summaries], feed_dict={
                         loss_avg_t: sum_loss / REPORT_EVERY_STEPS,
                         loss_t: loss,
+                        speed_t: speed,
                     })
                     summary_writer.add_summary(summary_res, step)
 
-                    print("epoch=%d, step=%d, loss=%f" % (epoch, step, sum_loss / REPORT_EVERY_STEPS))
+                    print("%s: epoch=%d, step=%d, loss=%f, speed=%.3f samples/s" % (
+                        timedelta(seconds=sec_passed), epoch,
+                        step, sum_loss / REPORT_EVERY_STEPS, speed))
                     sum_loss = 0.0
 
                 if step % SAVE_EMBEDDINGS_EVERY == 0:

@@ -1,7 +1,7 @@
+import os
 import math
 import pickle
 import argparse
-import numpy as np
 import logging as log
 import tensorflow as tf
 
@@ -25,6 +25,11 @@ def build_input_pipeline(input_file, batch_size):
     return center_batch_t, context_batch_t
 
 
+def get_num_entries(input_file):
+    st = os.stat(input_file)
+    return st.st_size / 8
+
+
 if __name__ == "__main__":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -36,6 +41,9 @@ if __name__ == "__main__":
     log.info("Reading dict from %s", args.dict)
     dict_data = read_dict(args.dict)
     log.info("Dict has %d entries", len(dict_data))
+
+    input_entries = get_num_entries(args.train)
+    log.info("Input data has %d samples", input_entries)
 
     dict_size = len(dict_data)
     vec_size = 100
@@ -77,6 +85,7 @@ if __name__ == "__main__":
         threads = tf.train.start_queue_runners(session, coord)
 
         try:
+            sum_loss = 0.0
             while True:
                 batch, labels = session.run([center_batch_t, context_batch_t])
 
@@ -86,9 +95,12 @@ if __name__ == "__main__":
                 }
 
                 _, step, loss = session.run([optimizer, global_step_t, loss_t], feed_dict=feed_dict)
+                sum_loss += loss
 
                 if step % 100 == 0:
-                    print(step, loss)
+                    epoch = int(step * batch_size / input_entries)
+                    print("epoch=%d, step=%d, loss=%f" % (epoch, step, sum_loss / 100))
+                    sum_loss = 0.0
         finally:
             coord.request_stop()
 

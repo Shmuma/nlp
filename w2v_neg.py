@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     dict_size = len(dict_data)
     vec_size = 100
-    batch_size = 256
+    batch_size = 1024
     num_sampled = 10
     log.info("Training params: vec_size=%d, batch=%d, num_neg=%d", vec_size, batch_size, num_sampled)
 

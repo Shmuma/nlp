@@ -1,2 +1,4 @@
 *.zip
 cs224d/datasets/stanfordSentimentTreebank/
+*.train
+*.dict

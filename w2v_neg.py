@@ -1,51 +1,47 @@
-import tensorflow as tf
 import math
+import pickle
+import argparse
 import numpy as np
-
-import sys
-import collections
-
-from cs224d.data_utils import StanfordSentiment
+import logging as log
+import tensorflow as tf
 
 
-def generate_batches(dataset, batch_size, context_one_side):
-    """
-    Infinitely yield batches for given size and epoch number
-    """
-    assert isinstance(dataset, StanfordSentiment)
+def read_dict(file_name):
+    with open(file_name, "rb") as fd:
+        return pickle.load(fd)
 
-    batch = np.ndarray(shape=(batch_size, ), dtype=np.int32)
-    labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-    tokens = dataset.tokens()
-    ofs = 0
 
-    while True:
-        center, ctx_words = dataset.getRandomContext(context_one_side)
-        c_id = tokens[center]
-        for ctx_word in ctx_words:
-            ctx_id = tokens[ctx_word]
-            batch[ofs] = c_id
-            labels[ofs] = ctx_id
-            ofs += 1
-            if ofs == batch_size:
-                yield batch, labels
-                ofs = 0
+def build_input_pipeline(input_prefix):
+    ctr_input_files = tf.train.string_input_producer([input_prefix + ".center"])
+    ctx_input_files = tf.train.string_input_producer([input_prefix + ".context"])
+
+    ctr_reader = tf.FixedLengthRecordReader()
+
 
 if __name__ == "__main__":
-    print("Initialize dataset")
-    dataset = StanfordSentiment()
-    print("Dictionary size=%d" % len(dataset.tokens()))
+    log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-    dict_size = len(dataset.tokens())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--dict", required=True, help="File with dict serialized data")
+    parser.add_argument("-t", "--train", required=True, help="Train data file")
+    args = parser.parse_args()
+
+    log.info("Reading dict from %s", args.dict)
+    dict_data = read_dict(args.dict)
+    log.info("Dict has %d entries", len(dict_data))
+
+    dict_size = len(dict_data)
     vec_size = 100
     batch_size = 128
     num_sampled = 20
-    context_size_one = 3
+    log.info("Training params: vec_size=%d, batch=%d, num_neg=%d", vec_size, batch_size, num_sampled)
 
     embeddings = tf.Variable(tf.random_uniform([dict_size, vec_size], -1.0, 1.0))
     nce_weights = tf.Variable(
         tf.truncated_normal([dict_size, vec_size],
                             stddev=1.0 / math.sqrt(vec_size)))
+
+    build_input_pipeline(args.train)
 
     # Placeholders for inputs
     train_inputs_t = tf.placeholder(tf.int32, shape=[batch_size])
@@ -66,8 +62,7 @@ if __name__ == "__main__":
 
     with tf.Session() as session:
         init.run()
-        print("Initialized")
-        
+
         for iter_idx, (batch, labels) in enumerate(generate_batches(dataset, batch_size, context_size_one)):
             feed_dict = {
                 train_inputs_t: batch,

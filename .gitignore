@@ -4,3 +4,5 @@ cs224d/datasets/stanfordSentimentTreebank/
 *.dict
 *.npy
 .ipynb_checkpoints/
+data
+logs

@@ -24,8 +24,8 @@ def build_input_pipeline(input_file, batch_size):
     center_t, context_t = int_val_t[0], int_val_t[1]
 
     center_batch_t, context_batch_t = tf.train.shuffle_batch([center_t, context_t], batch_size,
-                                                             min_after_dequeue=10*batch_size,
-                                                             capacity=20*batch_size,
+                                                             min_after_dequeue=128*batch_size,
+                                                             capacity=256*batch_size,
                                                              num_threads=2)
     return center_batch_t, context_batch_t
 

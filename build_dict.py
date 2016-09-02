@@ -28,9 +28,9 @@ def build_dict(input_file, header=False, from_col=0):
     return res
 
 
-def shuffle_and_flush(buffer, fd):
-    np.random.shuffle(buffer)
-    for ofs in range(buffer.shape[0]):
+def shuffle_and_flush(buffer, fd, limit):
+    np.random.shuffle(buffer[:limit])
+    for ofs in range(limit):
         fd.write(struct.pack("II", buffer[ofs, 0], buffer[ofs, 1]))
 
 
@@ -86,7 +86,9 @@ if __name__ == "__main__":
                             shuffle_buffer[buffer_ofs, 1] = context_id
                             buffer_ofs += 1
                             if buffer_ofs == args.shuffle_buffer:
-                                shuffle_and_flush(shuffle_buffer, fd)
+                                shuffle_and_flush(shuffle_buffer, fd, buffer_ofs)
                                 buffer_ofs = 0
                         train_samples += 1
+            if shuffle_buffer is not None and buffer_ofs > 0:
+                shuffle_and_flush(shuffle_buffer, fd, buffer_ofs)
         log.info("Generated %d train pairs", train_samples)

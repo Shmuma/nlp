@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     global_step_t = tf.Variable(0, name='global_step', trainable=False)
     learning_rate_t = tf.train.exponential_decay(0.01, global_step_t,
-                                               100000, 0.96, staircase=True)
+                                               10000, 0.96, staircase=True)
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate_t).minimize(loss_t, global_step=global_step_t)
 
     # summaries

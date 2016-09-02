@@ -70,8 +70,6 @@ if __name__ == "__main__":
                             stddev=1.0 / math.sqrt(vec_size)))
 
     center_batch_t, context_batch_t = build_input_pipeline(args.train, batch_size)
-    # we need to reshape context to add 1 dimension
-    context_batch_t = tf.expand_dims(context_batch_t, 1)
 
     # Placeholders for inputs
     train_inputs_t = tf.placeholder(tf.int32, shape=[batch_size])
@@ -117,7 +115,7 @@ if __name__ == "__main__":
 
                 feed_dict = {
                     train_inputs_t: batch,
-                    train_labels_t: labels
+                    train_labels_t: np.expand_dims(labels, 1)
                 }
 
                 _, step, loss = session.run([optimizer, global_step_t, loss_t], feed_dict=feed_dict)

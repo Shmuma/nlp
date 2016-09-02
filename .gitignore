@@ -2,3 +2,5 @@
 cs224d/datasets/stanfordSentimentTreebank/
 *.train
 *.dict
+*.npy
+.ipynb_checkpoints/

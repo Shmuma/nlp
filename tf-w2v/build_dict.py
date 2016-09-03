@@ -74,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--dict", help="File to save dict data", required=False)
     parser.add_argument("-t", "--train", help="File save train data (center id, context id)", required=False)
     parser.add_argument("-c", "--context", type=int, default=8, help="Context size for train data (one side), default=8")
+    parser.add_argument("--skips-per-window", type=int, default=None, help="Count of skipgrams generated from the window, default=All")
     parser.add_argument("--shuffle-buffer", type=int, default=0, help="Shuffle buffer of examples, default=0 (disabled)")
     args = parser.parse_args()
 
@@ -103,10 +104,12 @@ if __name__ == "__main__":
             right = min(s_len, center_ofs + args.context)
             center_id = dict_data[center_word]
             # iterate for context words
-            for context_word in sentence[left:right+1]:
-                context_id = dict_data[context_word]
-                if context_id == center_id:
-                    continue
+            context_ids = list(filter(lambda idx: idx != center_id,
+                                      map(lambda w: dict_data[w], sentence[left:right+1])))
+            np.random.shuffle(context_ids)
+            if args.skips_per_window is not None:
+                context_ids = context_ids[:args.skips_per_window]
+            for context_id in context_ids:
                 train_writer.append(center_id, context_id)
                 train_samples += 1
 

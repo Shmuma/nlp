@@ -33,8 +33,8 @@ def get_num_entries(input_file):
 
 
 if __name__ == "__main__":
-    REPORT_EVERY_STEPS = 100
-    SAVE_EMBEDDINGS_EVERY = 10000
+    REPORT_EVERY_STEPS = 50
+    SAVE_EMBEDDINGS_EVERY = 1000
 
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     dict_size = len(dict_data)
     vec_size = 100
-    batch_size = 1024*4
+    batch_size = 1024*10
     num_sampled = 10
     log.info("Training params: vec_size=%d, batch=%d, num_neg=%d", vec_size, batch_size, num_sampled)
 
@@ -82,7 +82,8 @@ if __name__ == "__main__":
                        num_sampled, dict_size))
 
     global_step_t = tf.Variable(0, name='global_step', trainable=False)
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.03).minimize(loss_t, global_step=global_step_t)
+    #optimizer = tf.train.AdamOptimizer(learning_rate=0.03).minimize(loss_t, global_step=global_step_t)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=1.0).minimize(loss_t, global_step=global_step_t)
 
     # summaries
     tf.scalar_summary('loss_cur', loss_t)

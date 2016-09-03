@@ -23,10 +23,7 @@ def build_input_pipeline(input_file, batch_size):
     int_val_t = tf.decode_raw(raw_val_t, tf.int32)
     center_t, context_t = int_val_t[0], int_val_t[1]
 
-    center_batch_t, context_batch_t = tf.train.shuffle_batch([center_t, context_t], batch_size,
-                                                             min_after_dequeue=128*batch_size,
-                                                             capacity=256*batch_size,
-                                                             num_threads=2)
+    center_batch_t, context_batch_t = tf.train.batch([center_t, context_t], batch_size, num_threads=8, capacity=1024)
     return center_batch_t, context_batch_t
 
 
@@ -36,7 +33,7 @@ def get_num_entries(input_file):
 
 
 if __name__ == "__main__":
-    REPORT_EVERY_STEPS = 1000
+    REPORT_EVERY_STEPS = 100
     SAVE_EMBEDDINGS_EVERY = 10000
 
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -56,7 +53,7 @@ if __name__ == "__main__":
 
     dict_size = len(dict_data)
     vec_size = 100
-    batch_size = 1024
+    batch_size = 1024*4
     num_sampled = 10
     log.info("Training params: vec_size=%d, batch=%d, num_neg=%d", vec_size, batch_size, num_sampled)
 
@@ -85,7 +82,7 @@ if __name__ == "__main__":
                        num_sampled, dict_size))
 
     global_step_t = tf.Variable(0, name='global_step', trainable=False)
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss_t, global_step=global_step_t)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.03).minimize(loss_t, global_step=global_step_t)
 
     # summaries
     tf.scalar_summary('loss_cur', loss_t)

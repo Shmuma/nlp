@@ -85,9 +85,7 @@ if __name__ == "__main__":
                        num_sampled, dict_size))
 
     global_step_t = tf.Variable(0, name='global_step', trainable=False)
-    learning_rate_t = tf.train.exponential_decay(0.01, global_step_t,
-                                               10000, 0.96, staircase=True)
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate_t).minimize(loss_t, global_step=global_step_t)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss_t, global_step=global_step_t)
 
     # summaries
     tf.scalar_summary('loss_cur', loss_t)
@@ -95,7 +93,6 @@ if __name__ == "__main__":
     tf.scalar_summary('loss_avg', loss_avg_t)
     speed_t = tf.Variable(0.0, name="speed", trainable=False)
     tf.scalar_summary('speed', speed_t)
-    tf.scalar_summary('lr', learning_rate_t)
 
     init = tf.initialize_all_variables()
     merged_summaries = tf.merge_all_summaries()

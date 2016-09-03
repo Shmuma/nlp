@@ -34,6 +34,38 @@ def shuffle_and_flush(buffer, fd, limit):
         fd.write(struct.pack("II", buffer[ofs, 0], buffer[ofs, 1]))
 
 
+class TrainWriter:
+    def __init__(self, file_name, shuffle_buffer_size):
+        self.fd = open(file_name, "wb+")
+        if shuffle_buffer_size > 0:
+            self.shuffle_buffer = np.ndarray(shape=(shuffle_buffer_size, 2), dtype=np.uint32)
+            self.shuffle_buffer_size = shuffle_buffer_size
+            self.shuffle_buffer_ofs = 0
+        else:
+            self.shuffle_buffer = None
+
+    def close(self):
+        if self.shuffle_buffer is not None and self.shuffle_buffer_ofs > 0:
+            self._flush()
+        self.fd.close()
+
+    def _flush(self):
+        np.random.shuffle(self.shuffle_buffer[:self.shuffle_buffer_ofs])
+        for ofs in range(self.shuffle_buffer_ofs):
+            self.fd.write(struct.pack("II", *self.shuffle_buffer[ofs]))
+        self.shuffle_buffer_ofs = 0
+
+    def append(self, center_id, context_id):
+        if self.shuffle_buffer is not None:
+            self.shuffle_buffer[self.shuffle_buffer_ofs, 0] = center_id
+            self.shuffle_buffer[self.shuffle_buffer_ofs, 1] = context_id
+            self.shuffle_buffer_ofs += 1
+            if self.shuffle_buffer_ofs == self.shuffle_buffer_size:
+                self._flush()
+        else:
+            self.fd.write(struct.pack("II", center_id, context_id))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", required=True, help="Input file with sentences (one per line with index as first token)")
@@ -56,39 +88,29 @@ if __name__ == "__main__":
         log.info("Dict saved in %s", args.dict)
 
     if args.train:
-        buffer_ofs = 0
-        if args.shuffle_buffer > 0:
-            shuffle_buffer = np.ndarray(shape=(args.shuffle_buffer, 2), dtype=np.int32)
-        else:
-            shuffle_buffer = None
+        train_writer = TrainWriter(args.train, args.shuffle_buffer)
+    else:
+        train_writer = None
 
-        log.info("Starting to generate training data with one-side context %d", args.context)
-        train_samples = 0
-        with open(args.train, "wb+") as fd:
-            for sentence in iterate_input_sentences(args.input, header=args.header, from_col=args.from_col):
-                s_len = len(sentence)
-                # treat every word in a sentence as a center
-                for center_ofs, center_word in enumerate(sentence):
-                    left = max(0, center_ofs - args.context)
-                    right = min(s_len, center_ofs + args.context)
-                    center_id = dict_data[center_word]
-                    center_dat = struct.pack("I", center_id)
-                    # iterate for context words
-                    for context_word in sentence[left:right+1]:
-                        context_id = dict_data[context_word]
-                        if context_id == center_id:
-                            continue
-                        if shuffle_buffer is None:
-                            fd.write(center_dat)
-                            fd.write(struct.pack("I", context_id))
-                        else:
-                            shuffle_buffer[buffer_ofs, 0] = center_id
-                            shuffle_buffer[buffer_ofs, 1] = context_id
-                            buffer_ofs += 1
-                            if buffer_ofs == args.shuffle_buffer:
-                                shuffle_and_flush(shuffle_buffer, fd, buffer_ofs)
-                                buffer_ofs = 0
-                        train_samples += 1
-            if shuffle_buffer is not None and buffer_ofs > 0:
-                shuffle_and_flush(shuffle_buffer, fd, buffer_ofs)
-        log.info("Generated %d train pairs", train_samples)
+    train_samples = 0
+    log.info("Starting to generate training data with one-side context %d", args.context)
+
+    for sentence in iterate_input_sentences(args.input, header=args.header, from_col=args.from_col):
+        s_len = len(sentence)
+        # treat every word in a sentence as a center
+        for center_ofs, center_word in enumerate(sentence):
+            left = max(0, center_ofs - args.context)
+            right = min(s_len, center_ofs + args.context)
+            center_id = dict_data[center_word]
+            # iterate for context words
+            for context_word in sentence[left:right+1]:
+                context_id = dict_data[context_word]
+                if context_id == center_id:
+                    continue
+                train_writer.append(center_id, context_id)
+                train_samples += 1
+
+    log.info("Generated %d train pairs", train_samples)
+    if train_writer:
+        train_writer.close()
+        train_writer = None

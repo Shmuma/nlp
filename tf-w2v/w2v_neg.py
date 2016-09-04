@@ -33,7 +33,7 @@ def get_num_entries(input_file):
 
 
 if __name__ == "__main__":
-    REPORT_EVERY_STEPS = 50
+    REPORT_EVERY_STEPS = 100
     SAVE_EMBEDDINGS_EVERY = 1000
 
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -96,7 +96,10 @@ if __name__ == "__main__":
     merged_summaries = tf.merge_all_summaries()
     time_started = time()
 
-    with tf.Session() as session:
+    # limit amount of allocated memory to 1/2 of 8GB
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5)
+
+    with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as session:
         summary_writer = tf.train.SummaryWriter("logs/" + args.run, session.graph)
         session.run(init)
 

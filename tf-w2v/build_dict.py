@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Tool builds dictionary and train data from given text data.
 """
@@ -6,6 +7,8 @@ import argparse
 import logging as log
 import pickle
 import struct
+from time import time
+from datetime import timedelta
 
 
 def iterate_input_sentences(input_file, header=False, from_col=0):
@@ -50,9 +53,14 @@ class TrainWriter:
         self.fd.close()
 
     def _flush(self):
+        log.info("Flushing buffer with %d samples", self.shuffle_buffer_ofs)
+        st_time = time()
         np.random.shuffle(self.shuffle_buffer[:self.shuffle_buffer_ofs])
         for ofs in range(self.shuffle_buffer_ofs):
             self.fd.write(struct.pack("II", *self.shuffle_buffer[ofs]))
+        delta = time() - st_time
+        speed = self.shuffle_buffer_ofs / delta
+        log.info("Flused in %s, speed %.2f samples/sec", timedelta(seconds=delta), speed)
         self.shuffle_buffer_ofs = 0
 
     def append(self, center_id, context_id):
@@ -113,7 +121,7 @@ if __name__ == "__main__":
                 train_writer.append(center_id, context_id)
                 train_samples += 1
 
-    log.info("Generated %d train pairs", train_samples)
     if train_writer:
         train_writer.close()
         train_writer = None
+    log.info("Generated %d train pairs", train_samples)

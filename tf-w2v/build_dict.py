@@ -9,6 +9,7 @@ import pickle
 import struct
 from time import time
 from datetime import timedelta
+from scipy import sparse
 
 
 def iterate_input_sentences(input_file, header=False, from_col=0):
@@ -74,6 +75,19 @@ class TrainWriter:
             self.fd.write(struct.pack("II", center_id, context_id))
 
 
+class GloveWriter:
+    def __init__(self, dict_size, file_name, shuffle_buffer_size):
+        self.dict_size = dict_size
+        self.data = sparse.dok_matrix((dict_size, dict_size), dtype=np.uint32)
+
+    def append(self, center_id, context_id):
+        self.data[center_id, context_id] += 1
+
+    def close(self):
+        i, j, v = sparse.find(self.data)
+        log.info("Glove matrix has %d entries", len(i))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", required=True, help="Input file with sentences (one per line with index as first token)")
@@ -84,6 +98,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--context", type=int, default=8, help="Context size for train data (one side), default=8")
     parser.add_argument("--skips-per-window", type=int, default=None, help="Count of skipgrams generated from the window, default=All")
     parser.add_argument("--shuffle-buffer", type=int, default=0, help="Shuffle buffer of examples, default=0 (disabled)")
+    parser.add_argument("-g", "--glove", help="File to save glove train data", required=False)
     args = parser.parse_args()
 
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -96,10 +111,13 @@ if __name__ == "__main__":
             pickle.dump(dict_data, fd)
         log.info("Dict saved in %s", args.dict)
 
+    train_writer = None
+    glove_writer = None
+
     if args.train:
         train_writer = TrainWriter(args.train, args.shuffle_buffer)
-    else:
-        train_writer = None
+    if args.glove:
+        glove_writer = GloveWriter(len(dict_data), args.glove, args.shuffle_buffer)
 
     train_samples = 0
     log.info("Starting to generate training data with one-side context %d", args.context)
@@ -118,10 +136,16 @@ if __name__ == "__main__":
             if args.skips_per_window is not None:
                 context_ids = context_ids[:args.skips_per_window]
             for context_id in context_ids:
-                train_writer.append(center_id, context_id)
+                if train_writer:
+                    train_writer.append(center_id, context_id)
+                if glove_writer:
+                    glove_writer.append(center_id, context_id)
                 train_samples += 1
 
     if train_writer:
         train_writer.close()
         train_writer = None
+    if glove_writer:
+        glove_writer.close()
+        glove_writer = None
     log.info("Generated %d train pairs", train_samples)

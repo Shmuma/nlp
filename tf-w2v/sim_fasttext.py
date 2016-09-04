@@ -11,7 +11,7 @@ def find_similar(word, dict_data, dict_rev, model):
     sim = np.dot(model, model[word_id])
     order = np.argsort(sim)
     top_idx = reversed(order[-args.top:])
-    return [dict_rev[idx] for idx in top_idx]
+    return [dict_rev[idx] for idx in top_idx if idx != word_id]
 
 
 if __name__ == "__main__":
@@ -38,6 +38,8 @@ if __name__ == "__main__":
             embeddings[word_idx] = vec
 
     log.info("Read %d word vectors from model file", len(dict_data))
+    log.info("Calculate normalised embeddings")
+    norm_embeddings = embeddings / np.sqrt(np.sum(np.square(embeddings), axis=1, keepdims=True))
 
     query = []
 
@@ -49,7 +51,7 @@ if __name__ == "__main__":
     query.extend(args.words)
 
     for word in query:
-        top = find_similar(word, dict_data, dict_rev, embeddings)
+        top = find_similar(word, dict_data, dict_rev, norm_embeddings)
         if top is None:
             log.info("Word '%s' not found in dictionary", word)
         else:

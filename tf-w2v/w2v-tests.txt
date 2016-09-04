@@ -6,4 +6,4 @@ Varying count of skipgrams per window, results:
 skips=1, data is small, but quality of similar words are very bad
 skips=4, the same, loss fallen from 65 to 12, but still no good similar words to test set
 
-skips=16 (all words from context):
+window=4, skips=8 (all words from context):

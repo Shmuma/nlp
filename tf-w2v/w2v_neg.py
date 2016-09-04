@@ -25,7 +25,7 @@ def build_input_pipeline(input_file, batch_size):
     int_val_t = tf.decode_raw(raw_val_t, tf.int32)
     center_t, context_t = int_val_t[0], int_val_t[1]
 
-    center_batch_t, context_batch_t = tf.train.batch([center_t, context_t], batch_size, num_threads=8, capacity=1024)
+    center_batch_t, context_batch_t = tf.train.batch([center_t, context_t], batch_size, num_threads=4, capacity=1024)
     return center_batch_t, context_batch_t
 
 
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     time_started = time()
 
     # limit amount of allocated memory to 1/2 of 8GB
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.4)
 
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as session:
         summary_writer = tf.train.SummaryWriter("logs/" + args.run, session.graph)

@@ -17,6 +17,7 @@ if __name__ == "__main__":
 
     log.info("Reading model from %s", args.model)
     model = np.load(args.model)
+    norm_embeddings = model / np.sqrt(np.sum(np.square(model), axis=1, keepdims=True))
     log.info("Reading dict from %s", args.dict)
     with open(args.dict, "rb") as fd:
         dict_data = pickle.load(fd)
@@ -30,7 +31,7 @@ if __name__ == "__main__":
         if word_id is None:
             log.info("Word '%s' not found in dictionary", word)
             continue
-        sim = np.dot(model, model[word_id])
+        sim = np.dot(norm_embeddings, norm_embeddings[word_id])
         order = np.argsort(sim)
         top_idx = reversed(order[-args.top-1:])
         top = [dict_rev[idx] for idx in list(top_idx)[1:]]

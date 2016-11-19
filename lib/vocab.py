@@ -17,8 +17,11 @@ class Vocab:
         self.index_to_word[self.next_idx] = token
         self.next_idx += 1
 
+    def size(self):
+        return len(self.word_to_index)
+
     def __str__(self):
-        return "Vocab[size=%d]" % len(self.word_to_index)
+        return "Vocab[size=%d]" % self.size()
 
     def unk_token(self):
         return '<unk>'

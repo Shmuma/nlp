@@ -17,17 +17,19 @@ CELL_SIZE = 100
 LR = 0.001
 
 LOG_DIR = "logs"
+SAVE_DIR = "saves"
 
 if __name__ == "__main__":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-    if not os.path.exists(LOG_DIR):
-        os.makedirs(LOG_DIR)
-
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", "--name", default="rnn", help="Name of the run used in saving logs and models")
-    parser.add_argument("--max-epoch", type=int, help="If specified, stop after given amount of epoches, default=no limit")
+    parser.add_argument("--max-epoch", type=int, default=16,
+                        help="If specified, stop after given amount of epoches, default=16")
     args = parser.parse_args()
+
+    os.makedirs(os.path.join(LOG_DIR, args.name), exist_ok=True)
+    os.makedirs(os.path.join(SAVE_DIR, args.name), exist_ok=True)
 
     log.info("Loading PTB dataset...")
     data = ptb.PTBDataset("data", vocab.Vocab(), num_steps=10)
@@ -40,7 +42,7 @@ if __name__ == "__main__":
         cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, data.vocab.size())
         initial_state = cell.zero_state(BATCH, dtype=tf.float32)
 
-        with tf.variable_scope("Model"):
+        with tf.variable_scope("W2V"):
             embedding = tf.get_variable("embedding", [data.vocab.size(), EMBEDDING])
             inputs = tf.nn.embedding_lookup(embedding, ph_input)
             inputs = [tf.squeeze(val, squeeze_dims=[1]) for val in tf.split(split_dim=1, num_split=NUM_STEPS, value=inputs)]
@@ -55,6 +57,8 @@ if __name__ == "__main__":
         writer = tf.train.SummaryWriter(os.path.join(LOG_DIR, args.name), session.graph)
         summary_loss_ph = tf.placeholder(tf.float32, name='loss')
         tf.scalar_summary("loss", summary_loss_ph)
+
+        saver = tf.train.Saver()
 
         summaries = tf.merge_all_summaries()
         session.run(tf.initialize_all_variables())
@@ -80,5 +84,6 @@ if __name__ == "__main__":
                     writer.flush()
                     losses = []
                 global_step += 1
+            saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
             epoch += 1
     pass

@@ -11,11 +11,14 @@ class PTBDataset:
         self.vocab = vocab
         vocab.build(self._read_train())
 
-        self.train_x, self.train_y = self._build_samples(self._read_train())
+        self.train_x = self.train_y = None
         self.progress = 0.0
 
     def __str__(self):
         return "PTBData[vocab=%s, train_samples=%d]" % (self.vocab, len(self.train_x))
+
+    def load_train(self):
+        self.train_x, self.train_y = self._build_samples(self._read_train())
 
     def _read_train(self):
         with open(os.path.join(self.data_dir, "ptb.train.txt"), "rt", encoding='utf-8') as fd:

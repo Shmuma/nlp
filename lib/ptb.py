@@ -4,24 +4,31 @@ import numpy as np
 
 
 class PTBDataset:
+    TRAIN_FILE = "ptb.train.txt"
+    VALID_FILE = "ptb.valid.txt"
+    TEST_FILE =  "ptb.test.txt"
+
     def __init__(self, data_dir, vocab, num_steps):
         self.num_steps = num_steps
         self.data_dir = data_dir
 
         self.vocab = vocab
-        vocab.build(self._read_train())
+        vocab.build(self._read_file(self.TRAIN_FILE))
 
         self.train_x = self.train_y = None
-        self.progress = 0.0
+        self.valid_x = self.valid_y = None
+        self.test_x = self.test_y = None
 
     def __str__(self):
         return "PTBData[vocab=%s, train_samples=%d]" % (self.vocab, len(self.train_x))
 
-    def load_train(self):
-        self.train_x, self.train_y = self._build_samples(self._read_train())
+    def load_dataset(self):
+        self.train_x, self.train_y = self._build_samples(self._read_file(self.TRAIN_FILE))
+        self.valid_x, self.valid_y = self._build_samples(self._read_file(self.VALID_FILE))
+        self.test_x, self.test_y = self._build_samples(self._read_file(self.TEST_FILE))
 
-    def _read_train(self):
-        with open(os.path.join(self.data_dir, "ptb.train.txt"), "rt", encoding='utf-8') as fd:
+    def _read_file(self, file_name):
+        with open(os.path.join(self.data_dir, file_name), "rt", encoding='utf-8') as fd:
             for l in fd:
                 l = l.strip()
                 for w in l.split():
@@ -54,20 +61,28 @@ class PTBDataset:
         return np.array(res_x), np.array(res_y)
 
     def iterate_train(self, batch_size, shuffle=True):
+        self.iterate_dataset(batch_size, self.train_x, self.train_y, shuffle)
+
+    def iterate_validation(self, batch_size):
+        self.iterate_dataset(batch_size, self.valid_x, self.valid_y, shuffle=False)
+
+    def iterate_dataset(self, batch_size, x, y, shuffle=True):
         """
         Iterate for train samples batched with given batch size
         """
         if shuffle:
-            shuffle_idx = list(range(len(self.train_x)))
+            shuffle_idx = list(range(len(x)))
             random.shuffle(shuffle_idx)
-            self.train_x = self.train_x[shuffle_idx]
-            self.train_y = self.train_y[shuffle_idx]
+            x = x[shuffle_idx]
+            y = y[shuffle_idx]
 
         ofs = 0
-        self.progress = 0.0
-        while ofs + batch_size <= len(self.train_x):
-            x = self.train_x[ofs:ofs+batch_size]
-            y = self.train_y[ofs:ofs+batch_size]
-            yield x, y
+        progress = 0.0
+        while ofs + batch_size <= len(x):
+            xx = x[ofs:ofs+batch_size]
+            yy = y[ofs:ofs+batch_size]
+            yield xx, yy, progress
             ofs += batch_size
-            self.progress = ofs / len(self.train_x)
+            progress = ofs / len(x)
+
+

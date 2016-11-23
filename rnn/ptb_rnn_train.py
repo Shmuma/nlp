@@ -79,7 +79,7 @@ if __name__ == "__main__":
         global_step = 0
         epoch = 0
         while args.max_epoch is None or args.max_epoch > epoch:
-            for iter_no, (train_x, train_y) in enumerate(data.iterate_train(BATCH)):
+            for iter_no, (train_x, train_y, progress) in enumerate(data.iterate_train(BATCH)):
                 loss, _ = session.run([loss_t, opt_t], feed_dict={
                     ph_input: train_x,
                     ph_labels: train_y
@@ -88,7 +88,7 @@ if __name__ == "__main__":
                 if iter_no % 100 == 0:
                     m_loss = np.mean(losses)
                     log.info("Epoch=%d, iter=%d, epoch_perc=%.2f%%, mean_loss=%s",
-                             epoch, iter_no, data.progress*100.0, m_loss)
+                             epoch, iter_no, progress*100.0, m_loss)
                     summ_res, = session.run([summaries], feed_dict={
                         summary_loss_ph: m_loss,
                     })

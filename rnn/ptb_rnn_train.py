@@ -70,7 +70,7 @@ if __name__ == "__main__":
         summary_loss_ph = tf.placeholder(tf.float32, name='loss')
         tf.scalar_summary("loss", summary_loss_ph)
 
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=args.max_epoch)
 
         summaries = tf.merge_all_summaries()
         session.run(tf.initialize_all_variables())

@@ -19,13 +19,15 @@ NUM_STEPS = 10
 EMBEDDING = 100
 CELL_SIZE = 100
 LR = 0.001
+DROPOUT = 0.5
 
 LOG_DIR = "logs"
 SAVE_DIR = "saves"
 
 
-def make_net(ph_input, vocab_size, num_steps=NUM_STEPS, batch=BATCH):
+def make_net(ph_input, vocab_size, dropout_prob=DROPOUT, num_steps=NUM_STEPS, batch=BATCH):
     cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE)
+    cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_prob, output_keep_prob=dropout_prob)
     cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, vocab_size)
     initial_state = cell.zero_state(batch, dtype=tf.float32)
 

@@ -51,7 +51,8 @@ if __name__ == "__main__":
     log.info("Loaded, creating model")
 
     ph_input = tf.placeholder(tf.int32, shape=(None, 1), name="input")
-    initial_state, outputs, final_state = model.make_net(ph_input, data.vocab.size(), num_steps=1, batch=1)
+    initial_state, outputs, final_state = model.make_net(ph_input, data.vocab.size(), num_steps=1,
+                                                         batch=1, dropout_prob=1.0)
     saver = tf.train.Saver()
 
     with tf.Session() as session:

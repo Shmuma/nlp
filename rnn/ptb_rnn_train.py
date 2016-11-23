@@ -96,6 +96,7 @@ if __name__ == "__main__":
                     writer.flush()
                     losses = []
                 global_step += 1
+            saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
 
             # validation
             log.info("Running validation...")
@@ -106,8 +107,7 @@ if __name__ == "__main__":
                     ph_labels: y
                 })
                 losses.append(loss)
-                log.info("Validiation perplexity: %s", np.exp(np.mean(losses)))
-            saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
+            log.info("Validiation perplexity: %s", np.exp(np.mean(losses)))
             epoch += 1
 
         log.info("Running test...")
@@ -118,6 +118,6 @@ if __name__ == "__main__":
                 ph_labels: y
             })
             losses.append(loss)
-            log.info("Test perplexity: %s", np.exp(np.mean(losses)))
+        log.info("Test perplexity: %s", np.exp(np.mean(losses)))
 
     pass

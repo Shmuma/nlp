@@ -17,8 +17,8 @@ from lib import ptb, vocab
 BATCH = 64
 NUM_STEPS = 10
 EMBEDDING = 100
-CELL_SIZE = 100
-LR = 0.001
+CELL_SIZE = 200
+LR = 0.0005
 DROPOUT = 0.5
 
 LOG_DIR = "logs"

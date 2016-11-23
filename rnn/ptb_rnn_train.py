@@ -24,15 +24,15 @@ LOG_DIR = "logs"
 SAVE_DIR = "saves"
 
 
-def make_net(ph_input, vocab_size):
+def make_net(ph_input, vocab_size, num_steps=NUM_STEPS, batch=BATCH):
     cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE)
     cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, vocab_size)
-    initial_state = cell.zero_state(BATCH, dtype=tf.float32)
+    initial_state = cell.zero_state(batch, dtype=tf.float32)
 
     with tf.variable_scope("W2V"):
         embedding = tf.get_variable("embedding", [vocab_size, EMBEDDING])
         inputs = tf.nn.embedding_lookup(embedding, ph_input)
-        inputs = [tf.squeeze(val, squeeze_dims=[1]) for val in tf.split(split_dim=1, num_split=NUM_STEPS, value=inputs)]
+        inputs = [tf.squeeze(val, squeeze_dims=[1]) for val in tf.split(split_dim=1, num_split=num_steps, value=inputs)]
     outputs, state = tf.nn.rnn(cell, inputs, initial_state=initial_state)
     return initial_state, outputs, state
 

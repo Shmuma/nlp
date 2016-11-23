@@ -35,3 +35,6 @@ class Vocab:
             return self.encode(self.unk_token())
         return res
 
+    def decode(self, token_id):
+        return self.index_to_word.get(token_id, self.unk_token())
+

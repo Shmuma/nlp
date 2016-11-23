@@ -61,13 +61,16 @@ class PTBDataset:
         return np.array(res_x), np.array(res_y)
 
     def iterate_train(self, batch_size, shuffle=True):
-        self.iterate_dataset(batch_size, self.train_x, self.train_y, shuffle)
+        for v in self.iterate_dataset(batch_size, self.train_x, self.train_y, shuffle):
+            yield v
 
     def iterate_validation(self, batch_size):
-        self.iterate_dataset(batch_size, self.valid_x, self.valid_y, shuffle=False)
+        for v in self.iterate_dataset(batch_size, self.valid_x, self.valid_y, shuffle=False):
+            yield v
 
     def iterate_test(self, batch_size):
-        self.iterate_dataset(batch_size, self.test_x, self.test_y, shuffle=False)
+        for v in self.iterate_dataset(batch_size, self.test_x, self.test_y, shuffle=False):
+            yield v
 
     def iterate_dataset(self, batch_size, x, y, shuffle=True):
         """

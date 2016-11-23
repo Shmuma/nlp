@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     log.info("Loading PTB dataset...")
     data = ptb.PTBDataset("data", vocab.Vocab(), num_steps=10)
-    data.load_train()
+    data.load_dataset()
     log.info("Loaded: %s", data)
 
     with tf.Session() as session:
@@ -74,11 +74,11 @@ if __name__ == "__main__":
 
         summaries = tf.merge_all_summaries()
         session.run(tf.initialize_all_variables())
-        losses = []
 
         global_step = 0
         epoch = 0
         while args.max_epoch is None or args.max_epoch > epoch:
+            losses = []
             for iter_no, (train_x, train_y, progress) in enumerate(data.iterate_train(BATCH)):
                 loss, _ = session.run([loss_t, opt_t], feed_dict={
                     ph_input: train_x,
@@ -87,8 +87,8 @@ if __name__ == "__main__":
                 losses.append(loss)
                 if iter_no % 100 == 0:
                     m_loss = np.mean(losses)
-                    log.info("Epoch=%d, iter=%d, epoch_perc=%.2f%%, mean_loss=%s",
-                             epoch, iter_no, progress*100.0, m_loss)
+                    log.info("Epoch=%d, iter=%d, epoch_perc=%.2f%%, perplexity=%s",
+                             epoch, iter_no, progress*100.0, np.exp(m_loss))
                     summ_res, = session.run([summaries], feed_dict={
                         summary_loss_ph: m_loss,
                     })
@@ -96,6 +96,28 @@ if __name__ == "__main__":
                     writer.flush()
                     losses = []
                 global_step += 1
+
+            # validation
+            log.info("Running validation...")
+            losses = []
+            for x, y, progress in data.iterate_validation(BATCH):
+                loss, = session.run([loss_t], feed_dict={
+                    ph_input: x,
+                    ph_labels: y
+                })
+                losses.append(loss)
+                log.info("Validiation perplexity: %s", np.exp(np.mean(losses)))
             saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
             epoch += 1
+
+        log.info("Running test...")
+        losses = []
+        for x, y, progress in data.iterate_test(BATCH):
+            loss, = session.run([loss_t], feed_dict={
+                ph_input: x,
+                ph_labels: y
+            })
+            losses.append(loss)
+            log.info("Test perplexity: %s", np.exp(np.mean(losses)))
+
     pass

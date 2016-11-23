@@ -66,6 +66,9 @@ class PTBDataset:
     def iterate_validation(self, batch_size):
         self.iterate_dataset(batch_size, self.valid_x, self.valid_y, shuffle=False)
 
+    def iterate_test(self, batch_size):
+        self.iterate_dataset(batch_size, self.test_x, self.test_y, shuffle=False)
+
     def iterate_dataset(self, batch_size, x, y, shuffle=True):
         """
         Iterate for train samples batched with given batch size

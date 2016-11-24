@@ -109,10 +109,12 @@ if __name__ == "__main__":
         progress = 0.0
         while args.max_epoch is None or args.max_epoch > epoch:
             losses = []
+            state = initial_state.eval()
             for iter_no, (train_x, train_y) in enumerate(ptb_iterator(data.encoded_train, BATCH, NUM_STEPS)):
-                loss, _ = session.run([loss_t, opt_t], feed_dict={
+                loss, state, _ = session.run([loss_t, final_state, opt_t], feed_dict={
                     ph_input: train_x,
-                    ph_labels: train_y
+                    ph_labels: train_y,
+                    initial_state: state
                 })
                 losses.append(loss)
                 if iter_no % 100 == 0:

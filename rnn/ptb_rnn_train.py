@@ -22,7 +22,7 @@ BATCH = 64
 NUM_STEPS = 10
 EMBEDDING = 50
 CELL_SIZE = 100
-LR = 0.005
+LR = 0.001
 DROPOUT = 0.9
 
 LOG_DIR = "logs"
@@ -33,8 +33,8 @@ def make_net(ph_input, vocab_size, dropout_prob=DROPOUT, num_steps=NUM_STEPS, ba
     with tf.variable_scope("Net", initializer=tf.contrib.layers.xavier_initializer()):
         cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE, activation=tf.sigmoid)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_prob, output_keep_prob=dropout_prob)
-        cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, vocab_size)
         cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, vocab_size, EMBEDDING)
+        cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, vocab_size)
         initial_state = cell.zero_state(batch, dtype=tf.float32)
 
         # with tf.variable_scope("W2V"):
@@ -110,17 +110,17 @@ if __name__ == "__main__":
         while args.max_epoch is None or args.max_epoch > epoch:
             losses = []
             state = initial_state.eval()
-            for iter_no, (train_x, train_y) in enumerate(ptb_iterator(data.encoded_train, BATCH, NUM_STEPS)):
+            for train_x, train_y in ptb_iterator(data.encoded_train, BATCH, NUM_STEPS):
                 loss, state, _ = session.run([loss_t, final_state, opt_t], feed_dict={
                     ph_input: train_x,
                     ph_labels: train_y,
                     initial_state: state
                 })
                 losses.append(loss)
-                if iter_no % 100 == 0:
+                if global_step % 100 == 0:
                     m_perpl = np.exp(np.mean(losses))
                     log.info("Epoch=%d, iter=%d, epoch_perc=%.2f%%, perplexity=%s",
-                             epoch, iter_no, progress*100.0, m_perpl)
+                             epoch, global_step, progress*100.0, m_perpl)
                     summ_res, = session.run([summaries], feed_dict={
                         summ_perpl_train_t: m_perpl,
                     })
@@ -128,7 +128,7 @@ if __name__ == "__main__":
                     writer.flush()
                     losses = []
                 global_step += 1
-            saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
+#            saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
 
             # validation
             log.info("Running validation...")

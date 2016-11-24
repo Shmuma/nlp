@@ -21,8 +21,9 @@ def test_sentence(vocab, session, ph_input, initial_state, outputs, final_state,
     state = initial_state.eval()
     # TODO: take into account whole sentence
     for _ in range(max_steps):
+        t = tokens.pop(0)
         feed_dict = {
-            ph_input: [tokens[-1:]],
+            ph_input: [[t]],
             initial_state: state,
         }
         new_state, pred = session.run([final_state, pred_t], feed_dict=feed_dict)
@@ -52,7 +53,7 @@ if __name__ == "__main__":
 
     ph_input = tf.placeholder(tf.int32, shape=(None, 1), name="input")
     initial_state, outputs, final_state = model.make_net(ph_input, data.vocab.size(), num_steps=1,
-                                                         batch=1, dropout_prob=1.0)
+                                                         batch=1)
     saver = tf.train.Saver()
 
     with tf.Session() as session:

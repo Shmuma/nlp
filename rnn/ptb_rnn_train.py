@@ -14,29 +14,50 @@ sys.path.append("..")
 
 from lib import ptb, vocab
 
+from lib.utils import calculate_perplexity, get_ptb_dataset, Vocab
+from lib.utils import ptb_iterator, sample
+
+
 BATCH = 64
 NUM_STEPS = 10
-EMBEDDING = 100
-CELL_SIZE = 200
-LR = 0.0005
-DROPOUT = 0.5
+EMBEDDING = 50
+CELL_SIZE = 100
+LR = 0.005
+DROPOUT = 0.9
 
 LOG_DIR = "logs"
 SAVE_DIR = "saves"
 
 
 def make_net(ph_input, vocab_size, dropout_prob=DROPOUT, num_steps=NUM_STEPS, batch=BATCH):
-    cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE)
+    cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE, activation=tf.sigmoid)
     cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_prob, output_keep_prob=dropout_prob)
     cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, vocab_size)
+    cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, vocab_size, EMBEDDING)
     initial_state = cell.zero_state(batch, dtype=tf.float32)
 
-    with tf.variable_scope("W2V"):
-        embedding = tf.get_variable("embedding", [vocab_size, EMBEDDING])
-        inputs = tf.nn.embedding_lookup(embedding, ph_input)
-        inputs = [tf.squeeze(val, squeeze_dims=[1]) for val in tf.split(split_dim=1, num_split=num_steps, value=inputs)]
+    # with tf.variable_scope("W2V"):
+    #     embedding = tf.get_variable("embedding", [vocab_size, EMBEDDING])
+    #     inputs = tf.nn.embedding_lookup(embedding, ph_input)
+    #     inputs = [tf.squeeze(val, squeeze_dims=[1]) for val in tf.split(split_dim=1, num_split=num_steps, value=inputs)]
+    inputs = [tf.squeeze(val, squeeze_dims=[1]) for val in tf.split(split_dim=1, num_split=num_steps, value=ph_input)]
     outputs, state = tf.nn.rnn(cell, inputs, initial_state=initial_state)
     return initial_state, outputs, state
+
+
+class Data:
+    def __init__(self):
+        self.vocab = Vocab()
+        self.vocab.construct(get_ptb_dataset('train'))
+        self.encoded_train = np.array(
+            [self.vocab.encode(word) for word in get_ptb_dataset('train')],
+            dtype=np.int32)
+        self.encoded_valid = np.array(
+            [self.vocab.encode(word) for word in get_ptb_dataset('valid')],
+            dtype=np.int32)
+        self.encoded_test = np.array(
+            [self.vocab.encode(word) for word in get_ptb_dataset('test')],
+            dtype=np.int32)
 
 
 if __name__ == "__main__":
@@ -52,9 +73,10 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(SAVE_DIR, args.name), exist_ok=True)
 
     log.info("Loading PTB dataset...")
-    data = ptb.PTBDataset("data", vocab.Vocab(), num_steps=10)
-    data.load_dataset()
-    log.info("Loaded: %s", data)
+#    data = ptb.PTBDataset("data", vocab.Vocab(), num_steps=10)
+#    data.load_dataset()
+#    log.info("Loaded: %s", data)
+    data = Data()
 
     with tf.Session() as session:
         ph_input = tf.placeholder(tf.int32, shape=(None, NUM_STEPS), name="input")
@@ -69,30 +91,35 @@ if __name__ == "__main__":
 
         # summaries
         writer = tf.train.SummaryWriter(os.path.join(LOG_DIR, args.name), session.graph)
-        summary_loss_ph = tf.placeholder(tf.float32, name='loss')
-        tf.scalar_summary("loss", summary_loss_ph)
+        summ_perpl_train_t = tf.placeholder(tf.float32, name='perplexity_train')
+        tf.scalar_summary("perplexity_train", summ_perpl_train_t)
+
+        summ_perpl_val_t = tf.placeholder(tf.float32, name='perplexity_val')
+        tf.scalar_summary("perplexity_val", summ_perpl_val_t, collections=['summary_epoch'])
 
         saver = tf.train.Saver(max_to_keep=args.max_epoch)
 
         summaries = tf.merge_all_summaries()
+        summaries_epoch = tf.merge_all_summaries('summary_epoch')
         session.run(tf.initialize_all_variables())
 
         global_step = 0
         epoch = 0
+        progress = 0.0
         while args.max_epoch is None or args.max_epoch > epoch:
             losses = []
-            for iter_no, (train_x, train_y, progress) in enumerate(data.iterate_train(BATCH)):
+            for iter_no, (train_x, train_y) in enumerate(ptb_iterator(data.encoded_train, BATCH, NUM_STEPS)):
                 loss, _ = session.run([loss_t, opt_t], feed_dict={
                     ph_input: train_x,
                     ph_labels: train_y
                 })
                 losses.append(loss)
                 if iter_no % 100 == 0:
-                    m_loss = np.mean(losses)
+                    m_perpl = np.exp(np.mean(losses))
                     log.info("Epoch=%d, iter=%d, epoch_perc=%.2f%%, perplexity=%s",
-                             epoch, iter_no, progress*100.0, np.exp(m_loss))
+                             epoch, iter_no, progress*100.0, m_perpl)
                     summ_res, = session.run([summaries], feed_dict={
-                        summary_loss_ph: m_loss,
+                        summ_perpl_train_t: m_perpl,
                     })
                     writer.add_summary(summ_res, global_step)
                     writer.flush()
@@ -103,18 +130,24 @@ if __name__ == "__main__":
             # validation
             log.info("Running validation...")
             losses = []
-            for x, y, progress in data.iterate_validation(BATCH):
+            for x, y in ptb_iterator(data.encoded_valid, BATCH, NUM_STEPS):
                 loss, = session.run([loss_t], feed_dict={
                     ph_input: x,
                     ph_labels: y
                 })
                 losses.append(loss)
-            log.info("Validiation perplexity: %s", np.exp(np.mean(losses)))
+            m_perpl = np.exp(np.mean(losses))
+            summ_res, = session.run([summaries_epoch], feed_dict={
+                summ_perpl_val_t: m_perpl
+            })
+            writer.add_summary(summ_res, global_step)
+            writer.flush()
+            log.info("Validiation perplexity: %s", m_perpl)
             epoch += 1
 
         log.info("Running test...")
         losses = []
-        for x, y, progress in data.iterate_test(BATCH):
+        for x, y in ptb_iterator(data.encoded_test, BATCH, NUM_STEPS):
             loss, = session.run([loss_t], feed_dict={
                 ph_input: x,
                 ph_labels: y

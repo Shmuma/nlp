@@ -219,7 +219,7 @@ class RNNLM_Model:
         # We want to check how well we correctly predict the next word
         # We cast o to float64 as there are numerical issues at hand
         # (i.e. sum(output of softmax) = 1.00000298179 and not 1)
-        self.predictions = [tf.nn.softmax(tf.cast(o, 'float64')) for o in self.outputs]
+#        self.predictions = [tf.nn.softmax(tf.cast(o, 'float64')) for o in self.outputs]
         # Reshape the output into len(vocab) sized chunks - the -1 says as many as
         # needed to evenly divide
         output = tf.reshape(tf.concat(1, self.outputs), [-1, len(self.vocab)])
@@ -436,7 +436,7 @@ TF implementation:
 2016-11-25 11:15:48,107 INFO   Net/RNN/OutputProjectionWrapper/Linear/Bias:0: (10000,)
 """
 
-if __name__ == "__main__1":
+if __name__ == "__main__":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()
@@ -493,7 +493,7 @@ if __name__ == "__main__1":
             saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__1":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()

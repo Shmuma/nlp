@@ -212,8 +212,8 @@ class RNNLM_Model:
         self.config = config
         self.load_data(debug=False)
         self.add_placeholders()
-        self.inputs = self.add_embedding()
-        self.outputs = self.add_model(self.inputs)
+#        self.inputs = self.add_embedding()
+        self.outputs = self.add_model()
 #        self.outputs = self.add_projection(self.rnn_outputs)
 
         # We want to check how well we correctly predict the next word
@@ -227,7 +227,7 @@ class RNNLM_Model:
         self.train_step = self.add_training_op(self.calculate_loss)
         self.global_step = 0
 
-    def add_model(self, inputs):
+    def add_model(self):
         """Creates the RNN LM model.
 
         In the space provided below, you need to implement the equations for the
@@ -272,8 +272,11 @@ class RNNLM_Model:
         cell = tf.nn.rnn_cell.BasicRNNCell(self.config.hidden_size, activation=tf.sigmoid)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=self.dropout_placeholder,
                                              output_keep_prob=self.dropout_placeholder)
+        cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, len(self.vocab), self.config.embed_size)
         cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, len(self.vocab))
         self.initial_state = cell.zero_state(self.config.batch_size, dtype=tf.float32)
+        inputs = [tf.squeeze(val, squeeze_dims=[1]) for val in
+                  tf.split(split_dim=1, num_split=self.config.num_steps, value=self.input_placeholder)]
         rnn_outputs, self.final_state = tf.nn.rnn(cell, inputs, initial_state=self.initial_state)
 
         # with tf.variable_scope('RNN') as scope:

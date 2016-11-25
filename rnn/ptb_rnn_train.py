@@ -213,8 +213,8 @@ class RNNLM_Model:
         self.load_data(debug=False)
         self.add_placeholders()
         self.inputs = self.add_embedding()
-        self.rnn_outputs = self.add_model(self.inputs)
-        self.outputs = self.add_projection(self.rnn_outputs)
+        self.outputs = self.add_model(self.inputs)
+#        self.outputs = self.add_projection(self.rnn_outputs)
 
         # We want to check how well we correctly predict the next word
         # We cast o to float64 as there are numerical issues at hand
@@ -272,6 +272,7 @@ class RNNLM_Model:
         cell = tf.nn.rnn_cell.BasicRNNCell(self.config.hidden_size, activation=tf.sigmoid)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=self.dropout_placeholder,
                                              output_keep_prob=self.dropout_placeholder)
+        cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, len(self.vocab))
         self.initial_state = cell.zero_state(self.config.batch_size, dtype=tf.float32)
         rnn_outputs, self.final_state = tf.nn.rnn(cell, inputs, initial_state=self.initial_state)
 

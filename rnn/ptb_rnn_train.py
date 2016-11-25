@@ -320,7 +320,7 @@ class RNNLM_Model:
 def make_net(vocab_size, dropout_prob=DROPOUT, num_steps=NUM_STEPS, batch=BATCH):
     ph_input = tf.placeholder(tf.int32, shape=(None, NUM_STEPS), name="input")
 
-    with tf.variable_scope("Net", initializer=tf.contrib.layers.xavier_initializer()):
+    with tf.variable_scope("Net", initializer=None):
         cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE, activation=tf.sigmoid)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_prob, output_keep_prob=dropout_prob)
         cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, vocab_size, EMBEDDING)
@@ -390,7 +390,41 @@ class Data:
             dtype=np.int32)
 
 
+def show_variables():
+    log.info("Trainable variables:")
+    for var in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES):
+        log.info("  %s: %s", var.name, var.get_shape())
+
+
+"""
+CS224N implementation:
+2016-11-25 11:13:49,394 INFO Trainable variables:
+2016-11-25 11:13:49,395 INFO   RNNLM/Embedding:0: (10000, 50)
+2016-11-25 11:13:49,395 INFO   RNNLM/RNN/HMatrix:0: (100, 100)
+2016-11-25 11:13:49,395 INFO   RNNLM/RNN/IMatrix:0: (50, 100)
+2016-11-25 11:13:49,395 INFO   RNNLM/RNN/B:0: (100,)
+2016-11-25 11:13:49,395 INFO   RNNLM/Projection/Matrix:0: (100, 10000)
+2016-11-25 11:13:49,395 INFO   RNNLM/Projection/Bias:0: (10000,)
+
+TF implementation:
+2016-11-25 11:15:48,107 INFO Trainable variables:
+2016-11-25 11:15:48,107 INFO   Net/RNN/EmbeddingWrapper/embedding:0: (10000, 50)
+2016-11-25 11:15:48,107 INFO   Net/RNN/BasicRNNCell/Linear/Matrix:0: (150, 100)
+2016-11-25 11:15:48,107 INFO   Net/RNN/BasicRNNCell/Linear/Bias:0: (100,)
+2016-11-25 11:15:48,107 INFO   Net/RNN/OutputProjectionWrapper/Linear/Matrix:0: (100, 10000)
+2016-11-25 11:15:48,107 INFO   Net/RNN/OutputProjectionWrapper/Linear/Bias:0: (10000,)
+"""
+
 if __name__ == "__main__1":
+    log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-n", "--name", default="rnn", help="Name of the run used in saving logs and models")
+    args = parser.parse_args()
+
+    os.makedirs(os.path.join(LOG_DIR, args.name), exist_ok=True)
+    os.makedirs(os.path.join(SAVE_DIR, args.name), exist_ok=True)
+
     config = Config()
     with tf.variable_scope('RNNLM') as scope:
         model = RNNLM_Model(config)
@@ -408,7 +442,7 @@ if __name__ == "__main__1":
 
     with tf.Session() as session:
         saver = tf.train.Saver(max_to_keep=16)
-        writer = tf.train.SummaryWriter("logs/run-3/", session.graph)
+        writer = tf.train.SummaryWriter(os.path.join(LOG_DIR, args.name), session.graph)
 
         def train_summary(step, perpl):
             s, = session.run([summaries], feed_dict={
@@ -418,6 +452,7 @@ if __name__ == "__main__1":
             writer.flush()
 
         session.run(init)
+        show_variables()
         for epoch in range(config.max_epochs):
             print('Epoch {}'.format(epoch))
             ###
@@ -434,7 +469,7 @@ if __name__ == "__main__1":
 
             print('Training perplexity: {}'.format(train_pp))
             print('Validation perplexity: {}'.format(valid_pp))
-            saver.save(session, os.path.join("saves/run-3", "model-epoch=%d" % epoch))
+            saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
 
 
 if __name__ == "__main__":
@@ -480,6 +515,7 @@ if __name__ == "__main__":
         summaries_epoch = tf.merge_all_summaries('summary_epoch')
         session.run(tf.initialize_all_variables())
 
+        show_variables()
         global_step = 0
         epoch = 0
         progress = 0.0

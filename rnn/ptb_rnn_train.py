@@ -266,10 +266,12 @@ class RNNLM_Model:
                    a tensor of shape (batch_size, hidden_size)
         """
         ### YOUR CODE HERE
-        with tf.variable_scope('InputDropout'):
-            inputs = [tf.nn.dropout(x, self.dropout_placeholder) for x in inputs]
+        # with tf.variable_scope('InputDropout'):
+        #     inputs = [tf.nn.dropout(x, self.dropout_placeholder) for x in inputs]
 
         cell = tf.nn.rnn_cell.BasicRNNCell(self.config.hidden_size, activation=tf.sigmoid)
+        cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=self.dropout_placeholder,
+                                             output_keep_prob=self.dropout_placeholder)
         self.initial_state = cell.zero_state(self.config.batch_size, dtype=tf.float32)
         rnn_outputs, self.final_state = tf.nn.rnn(cell, inputs, initial_state=self.initial_state)
 
@@ -292,8 +294,8 @@ class RNNLM_Model:
         #         rnn_outputs.append(state)
         #     self.final_state = rnn_outputs[-1]
 
-        with tf.variable_scope('RNNDropout'):
-            rnn_outputs = [tf.nn.dropout(x, self.dropout_placeholder) for x in rnn_outputs]
+        # with tf.variable_scope('RNNDropout'):
+        #     rnn_outputs = [tf.nn.dropout(x, self.dropout_placeholder) for x in rnn_outputs]
         ### END YOUR CODE
         return rnn_outputs
 

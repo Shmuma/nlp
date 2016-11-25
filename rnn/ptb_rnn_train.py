@@ -167,8 +167,17 @@ class RNNLM_Model:
         """
         ### YOUR CODE HERE
         all_ones = [tf.ones([self.config.batch_size * self.config.num_steps])]
+        log.info("Loss info:")
+        log.info("Output: %s", output)
+        labels = tf.reshape(self.labels_placeholder, [-1])
+        log.info("Labels: %s", labels)
+
+# 2016-11-25 12:19:29,690 INFO Loss info:
+# 2016-11-25 12:19:29,690 INFO Output: Tensor("RNNLM/Reshape:0", shape=(640, 10000), dtype=float32)
+# 2016-11-25 12:19:29,691 INFO Labels: Tensor("RNNLM/Reshape_1:0", shape=(?,), dtype=int32)
+
         cross_entropy = sequence_loss(
-            [output], [tf.reshape(self.labels_placeholder, [-1])], all_ones, len(self.vocab))
+            [output], [labels], all_ones)
         tf.add_to_collection('total_loss', cross_entropy)
         loss = tf.add_n(tf.get_collection('total_loss'))
         ### END YOUR CODE
@@ -317,63 +326,63 @@ class RNNLM_Model:
         return np.exp(np.mean(total_loss))
 
 
-def make_net(vocab_size, dropout_prob=DROPOUT, num_steps=NUM_STEPS, batch=BATCH):
-    ph_input = tf.placeholder(tf.int32, shape=(None, NUM_STEPS), name="input")
-
-    with tf.variable_scope("Net", initializer=None):
-        cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE, activation=tf.sigmoid)
-        cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_prob, output_keep_prob=dropout_prob)
-        cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, vocab_size, EMBEDDING)
-        cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, vocab_size)
-        initial_state = cell.zero_state(batch, dtype=tf.float32)
-
-        inputs = [tf.squeeze(val, squeeze_dims=[1]) for val in tf.split(split_dim=1, num_split=num_steps, value=ph_input)]
-        outputs, state = tf.nn.rnn(cell, inputs, initial_state=initial_state)
-    return ph_input, initial_state, outputs, state
-
-
-# def make_net(vocab_size, dropout_prob=DROPOUT):
+# def make_net(vocab_size, dropout_prob=DROPOUT, num_steps=NUM_STEPS, batch=BATCH):
 #     ph_input = tf.placeholder(tf.int32, shape=(None, NUM_STEPS), name="input")
 #
-#     # embeddings
-#     with tf.device('/cpu:0'):
-#         embedding = tf.get_variable(
-#             'Embedding',
-#             [vocab_size, EMBEDDING], trainable=True)
-#         inputs = tf.nn.embedding_lookup(embedding, ph_input)
-#         inputs = [tf.squeeze(x, [1]) for x in tf.split(1, NUM_STEPS, inputs)]
+#     with tf.variable_scope("Net", initializer=None):
+#         cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE, activation=tf.sigmoid)
+#         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_prob, output_keep_prob=dropout_prob)
+#         cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, vocab_size, EMBEDDING)
+#         cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, vocab_size)
+#         initial_state = cell.zero_state(batch, dtype=tf.float32)
 #
-#     with tf.variable_scope('InputDropout'):
-#         inputs = [tf.nn.dropout(x, dropout_prob) for x in inputs]
-#
-#     with tf.variable_scope('RNN') as scope:
-#         initial_state = tf.zeros([BATCH, CELL_SIZE])
-#         state = initial_state
-#         rnn_outputs = []
-#         for tstep, current_input in enumerate(inputs):
-#             if tstep > 0:
-#                 scope.reuse_variables()
-#             RNN_H = tf.get_variable(
-#                 'HMatrix', [CELL_SIZE, CELL_SIZE])
-#             RNN_I = tf.get_variable(
-#                 'IMatrix', [EMBEDDING, CELL_SIZE])
-#             RNN_b = tf.get_variable(
-#                 'B', [CELL_SIZE])
-#             state = tf.nn.sigmoid(
-#                 tf.matmul(state, RNN_H) + tf.matmul(current_input, RNN_I) + RNN_b)
-#             rnn_outputs.append(state)
-#         final_state = rnn_outputs[-1]
-#
-#     with tf.variable_scope('RNNDropout'):
-#         rnn_outputs = [tf.nn.dropout(x, dropout_prob) for x in rnn_outputs]
-#
-#     with tf.variable_scope('Projection'):
-#         U = tf.get_variable(
-#             'Matrix', [CELL_SIZE, vocab_size])
-#         proj_b = tf.get_variable('Bias', [vocab_size])
-#         outputs = [tf.matmul(o, U) + proj_b for o in rnn_outputs]
-#
-#     return ph_input, initial_state, outputs, final_state
+#         inputs = [tf.squeeze(val, squeeze_dims=[1]) for val in tf.split(split_dim=1, num_split=num_steps, value=ph_input)]
+#         outputs, state = tf.nn.rnn(cell, inputs, initial_state=initial_state)
+#     return ph_input, initial_state, outputs, state
+
+
+def make_net(vocab_size, dropout_prob=DROPOUT):
+    ph_input = tf.placeholder(tf.int32, shape=(None, NUM_STEPS), name="input")
+
+    # embeddings
+    with tf.device('/cpu:0'):
+        embedding = tf.get_variable(
+            'Embedding',
+            [vocab_size, EMBEDDING], trainable=True)
+        inputs = tf.nn.embedding_lookup(embedding, ph_input)
+        inputs = [tf.squeeze(x, [1]) for x in tf.split(1, NUM_STEPS, inputs)]
+
+    with tf.variable_scope('InputDropout'):
+        inputs = [tf.nn.dropout(x, dropout_prob) for x in inputs]
+
+    with tf.variable_scope('RNN') as scope:
+        initial_state = tf.zeros([BATCH, CELL_SIZE])
+        state = initial_state
+        rnn_outputs = []
+        for tstep, current_input in enumerate(inputs):
+            if tstep > 0:
+                scope.reuse_variables()
+            RNN_H = tf.get_variable(
+                'HMatrix', [CELL_SIZE, CELL_SIZE])
+            RNN_I = tf.get_variable(
+                'IMatrix', [EMBEDDING, CELL_SIZE])
+            RNN_b = tf.get_variable(
+                'B', [CELL_SIZE])
+            state = tf.nn.sigmoid(
+                tf.matmul(state, RNN_H) + tf.matmul(current_input, RNN_I) + RNN_b)
+            rnn_outputs.append(state)
+        final_state = rnn_outputs[-1]
+
+    with tf.variable_scope('RNNDropout'):
+        rnn_outputs = [tf.nn.dropout(x, dropout_prob) for x in rnn_outputs]
+
+    with tf.variable_scope('Projection'):
+        U = tf.get_variable(
+            'Matrix', [CELL_SIZE, vocab_size])
+        proj_b = tf.get_variable('Bias', [vocab_size])
+        outputs = [tf.matmul(o, U) + proj_b for o in rnn_outputs]
+
+    return ph_input, initial_state, outputs, final_state
 
 class Data:
     def __init__(self):
@@ -415,7 +424,7 @@ TF implementation:
 2016-11-25 11:15:48,107 INFO   Net/RNN/OutputProjectionWrapper/Linear/Bias:0: (10000,)
 """
 
-if __name__ == "__main__":
+if __name__ == "__main__1":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()
@@ -472,7 +481,7 @@ if __name__ == "__main__":
             saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
 
 
-if __name__ == "__main__1":
+if __name__ == "__main__":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()
@@ -495,11 +504,22 @@ if __name__ == "__main__1":
 
         ph_input, initial_state, outputs, final_state = make_net(data.vocab.size())
 
-        targets = tf.split(split_dim=1, num_split=NUM_STEPS, value=ph_labels)
-        loss_t = sequence_loss(outputs, targets, [tf.constant(1.0, tf.float32) for _ in range(NUM_STEPS)])
+#        targets = tf.split(split_dim=1, num_split=NUM_STEPS, value=ph_labels)
+        output = tf.reshape(tf.concat(1, outputs), [-1, data.vocab.size()])
+        log.info("Loss info:")
+        log.info("Output: %s", output)
+        labels = tf.reshape(ph_labels, [-1])
+        log.info("Labels: %s", labels)
+        loss_t = sequence_loss([output], [labels], [tf.ones([BATCH * NUM_STEPS])])
+        tf.add_to_collection('total_loss', loss_t)
+        loss = tf.add_n(tf.get_collection('total_loss'))
+
+# 2016-11-25 12:18:13,122 INFO Loss info:
+# 2016-11-25 12:18:13,122 INFO Output: Tensor("Reshape:0", shape=(640, 10000), dtype=float32)
+# 2016-11-25 12:18:13,123 INFO Labels: Tensor("Reshape_1:0", shape=(?,), dtype=int32)
 
         opt = tf.train.AdamOptimizer(LR)
-        opt_t = opt.minimize(loss_t)
+        opt_t = opt.minimize(loss)
 
         # summaries
         writer = tf.train.SummaryWriter(os.path.join(LOG_DIR, args.name), session.graph)

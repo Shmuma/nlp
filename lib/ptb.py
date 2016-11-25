@@ -1,5 +1,4 @@
 import os
-import random
 import numpy as np
 
 
@@ -8,8 +7,8 @@ class PTBDataset:
     VALID_FILE = "ptb.valid.txt"
     TEST_FILE =  "ptb.test.txt"
 
-    def __init__(self, data_dir, vocab, num_steps):
-        self.num_steps = num_steps
+    def __init__(self, data_dir, vocab, batch_size):
+        self.batch_steps = batch_size
         self.data_dir = data_dir
 
         self.vocab = vocab
@@ -35,60 +34,40 @@ class PTBDataset:
                     yield w
                 yield self.vocab.eos_token()
 
-    def _build_samples(self, tokens_iter, limit=None):
-        res_x = []
-        res_y = []
-        window = []
-        for token in tokens_iter:
-            token_id = self.vocab.encode(token)
+    def _build_samples(self, tokens_iter):
+        data = [self.vocab.encode(token) for token in tokens_iter]
+        batch_item_len = len(data) // self.batch_steps
+        even_len = self.batch_steps * batch_item_len
+        x = np.array(data[:even_len])
+        y = np.array(data[1:even_len+1])
+        x = np.reshape(x, (self.batch_steps, batch_item_len))
+        y = np.reshape(y, (self.batch_steps, batch_item_len))
+        return x, y
 
-            # push new entry
-            prev_window = list(window)
-            window.append(token_id)
-            if len(window) > self.num_steps:
-                window = window[-self.num_steps:]
-
-            # if we have complete data sample, append
-            if len(prev_window) == self.num_steps:
-                res_x.append(np.array(prev_window))
-                res_y.append(np.array(window))
-                if limit is not None and len(res_x) == limit:
-                    break
-
-            # cleanup window at the end of sentence
-            if token == self.vocab.eos_token():
-                window = []
-        return np.array(res_x), np.array(res_y)
-
-    def iterate_train(self, batch_size, shuffle=True):
-        for v in self.iterate_dataset(batch_size, self.train_x, self.train_y, shuffle):
+    def iterate_train(self, num_steps):
+        for v in self.iterate_dataset(num_steps, self.train_x, self.train_y):
             yield v
 
-    def iterate_validation(self, batch_size):
-        for v in self.iterate_dataset(batch_size, self.valid_x, self.valid_y, shuffle=False):
+    def iterate_validation(self, num_steps):
+        for v in self.iterate_dataset(num_steps, self.valid_x, self.valid_y):
             yield v
 
-    def iterate_test(self, batch_size):
-        for v in self.iterate_dataset(batch_size, self.test_x, self.test_y, shuffle=False):
+    def iterate_test(self, num_steps):
+        for v in self.iterate_dataset(num_steps, self.test_x, self.test_y):
             yield v
 
-    def iterate_dataset(self, batch_size, x, y, shuffle=True):
+    def iterate_dataset(self, num_steps, x, y):
         """
         Iterate for train samples batched with given batch size
         """
-        if shuffle:
-            shuffle_idx = list(range(len(x)))
-            random.shuffle(shuffle_idx)
-            x = x[shuffle_idx]
-            y = y[shuffle_idx]
-
         ofs = 0
+        max_width = x.shape[1]
         progress = 0.0
-        while ofs + batch_size <= len(x):
-            xx = x[ofs:ofs+batch_size]
-            yy = y[ofs:ofs+batch_size]
+        while ofs + num_steps <= max_width:
+            xx = x[:, ofs:ofs+num_steps]
+            yy = y[:, ofs:ofs+num_steps]
             yield xx, yy, progress
-            ofs += batch_size
-            progress = ofs / len(x)
+            ofs += num_steps
+            progress = ofs / max_width
 
 

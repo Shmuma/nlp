@@ -16,11 +16,10 @@ from rnn import ptb_rnn_train as model
 def test_sentence(vocab, session, ph_input, initial_state, outputs, final_state, sentence, ph_dropout, max_steps=100):
     tokens = [vocab.encode(word) for word in sentence.lower().split()]
     pred = None
-    pred_t = tf.nn.softmax(outputs[0])
     state = initial_state.eval()
     # feed whole sentence to get state
     for t in tokens:
-        state, pred = session.run([final_state, pred_t], feed_dict={
+        state, pred = session.run([final_state, outputs], feed_dict={
             ph_input: [[t]],
             ph_dropout: 1.0,
             initial_state: state
@@ -28,7 +27,7 @@ def test_sentence(vocab, session, ph_input, initial_state, outputs, final_state,
 
     res_tokens = []
     for _ in range(max_steps):
-        new_token_id = np.argmax(pred)
+        new_token_id = np.argmax(pred[0])
         new_token = vocab.decode(new_token_id)
 #        if new_token == vocab.eos_token():
 #            break
@@ -38,7 +37,7 @@ def test_sentence(vocab, session, ph_input, initial_state, outputs, final_state,
             initial_state: state,
             ph_dropout: 1.0
         }
-        state, pred = session.run([final_state, pred_t], feed_dict=feed_dict)
+        state, pred = session.run([final_state, outputs], feed_dict=feed_dict)
     print(" ".join(res_tokens))
 
 
@@ -52,13 +51,12 @@ if __name__ == "__main__":
 
     log.info("Loading vocabulary")
     data = ptb.PTBDataset("data", vocab.Vocab(), batch_size=1)
-    log.info("Loaded, creating model")
+    log.info("Loaded vocab %s, creating model", data.vocab)
 
-    ph_input, initial_state, outputs, final_state, ph_dropout = model.make_net(data.vocab.size(), num_steps=1, batch=1)
+    ph_input, initial_state, outputs, final_state, ph_dropout = model.make_net(data.vocab.size(), batch=1, num_steps=1)
     saver = tf.train.Saver()
 
     with tf.Session() as session:
-        session.run(tf.initialize_all_variables())
         log.info("Restoring the model from %s", args.model)
         saver.restore(session, args.model)
         log.info("Model restored")

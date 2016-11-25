@@ -272,7 +272,8 @@ class RNNLM_Model:
         cell = tf.nn.rnn_cell.BasicRNNCell(self.config.hidden_size, activation=tf.sigmoid)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=self.dropout_placeholder,
                                              output_keep_prob=self.dropout_placeholder)
-        cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, len(self.vocab), self.config.embed_size)
+        cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, len(self.vocab), self.config.embed_size,
+                                               initializer=tf.contrib.layers.xavier_initializer())
         cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, len(self.vocab))
         self.initial_state = cell.zero_state(self.config.batch_size, dtype=tf.float32)
         inputs = [tf.squeeze(val, squeeze_dims=[1]) for val in

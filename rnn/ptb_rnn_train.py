@@ -340,7 +340,7 @@ class RNNLM_Model:
 def make_net(vocab_size, dropout_prob=DROPOUT, num_steps=NUM_STEPS, batch=BATCH):
     ph_input = tf.placeholder(tf.int32, shape=(None, NUM_STEPS), name="input")
 
-    with tf.variable_scope("Net", initializer=None):
+    with tf.variable_scope("Net"):
         cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE, activation=tf.sigmoid)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_prob, output_keep_prob=dropout_prob)
         cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, vocab_size, EMBEDDING,
@@ -523,15 +523,13 @@ if __name__ == "__main__":
         labels = tf.reshape(ph_labels, [-1])
         log.info("Labels: %s", labels)
         loss_t = sequence_loss([output], [labels], [tf.ones([BATCH * NUM_STEPS])])
-        tf.add_to_collection('total_loss', loss_t)
-        loss = tf.add_n(tf.get_collection('total_loss'))
 
 # 2016-11-25 12:18:13,122 INFO Loss info:
 # 2016-11-25 12:18:13,122 INFO Output: Tensor("Reshape:0", shape=(640, 10000), dtype=float32)
 # 2016-11-25 12:18:13,123 INFO Labels: Tensor("Reshape_1:0", shape=(?,), dtype=int32)
 
         opt = tf.train.AdamOptimizer(LR)
-        opt_t = opt.minimize(loss)
+        opt_t = opt.minimize(loss_t)
 
         # summaries
         writer = tf.train.SummaryWriter(os.path.join(LOG_DIR, args.name), session.graph)

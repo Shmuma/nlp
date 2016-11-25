@@ -343,7 +343,8 @@ def make_net(vocab_size, dropout_prob=DROPOUT, num_steps=NUM_STEPS, batch=BATCH)
     with tf.variable_scope("Net", initializer=None):
         cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE, activation=tf.sigmoid)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_prob, output_keep_prob=dropout_prob)
-        cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, vocab_size, EMBEDDING)
+        cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, vocab_size, EMBEDDING,
+                                               initializer=tf.contrib.layers.xavier_initializer())
         cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, vocab_size)
         initial_state = cell.zero_state(batch, dtype=tf.float32)
 
@@ -435,7 +436,7 @@ TF implementation:
 2016-11-25 11:15:48,107 INFO   Net/RNN/OutputProjectionWrapper/Linear/Bias:0: (10000,)
 """
 
-if __name__ == "__main__":
+if __name__ == "__main__1":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()
@@ -492,7 +493,7 @@ if __name__ == "__main__":
             saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
 
 
-if __name__ == "__main__1":
+if __name__ == "__main__":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()

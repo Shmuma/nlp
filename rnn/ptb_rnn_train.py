@@ -123,13 +123,14 @@ if __name__ == "__main__":
             losses = []
             state = init_state
             for x, y, _ in data.iterate_validation(NUM_STEPS):
-                loss, state = session.run([loss_t, final_state], feed_dict={
+                loss, state, res_outs = session.run([loss_t, final_state, outputs], feed_dict={
                     ph_input: x,
                     ph_labels: y,
                     initial_state: state,
                     ph_dropout: 1.0
                 })
                 losses.append(loss)
+
             m_perpl = np.exp(np.mean(losses))
             summ_res, = session.run([summaries_epoch], feed_dict={
                 summ_perpl_val_t: m_perpl

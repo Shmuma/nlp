@@ -13,31 +13,42 @@ from lib import ptb, vocab
 from rnn import ptb_rnn_train as model
 
 
+
+def sample(a, temperature=1.0):
+    # helper function to sample an index from a probability array
+    # from https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py
+    a = np.log(a) / temperature
+    a = np.exp(a) / np.sum(np.exp(a))
+    return np.argmax(np.random.multinomial(1, a, 1))
+
+
+
 def test_sentence(vocab, session, ph_input, initial_state, outputs, final_state, sentence, ph_dropout, max_steps=100):
     tokens = [vocab.encode(word) for word in sentence.lower().split()]
-    pred = None
+    prob = None
     state = initial_state.eval()
+    prob_t = tf.nn.softmax(tf.cast(outputs[0], 'float64'))
     # feed whole sentence to get state
     for t in tokens:
-        state, pred = session.run([final_state, outputs], feed_dict={
+        state, prob = session.run([final_state, prob_t], feed_dict={
             ph_input: [[t]],
             ph_dropout: 1.0,
             initial_state: state
         })
 
-    res_tokens = []
+    res_tokens = sentence.lower().split()
     for _ in range(max_steps):
-        new_token_id = np.argmax(pred[0])
+        new_token_id = sample(prob[0])
         new_token = vocab.decode(new_token_id)
-#        if new_token == vocab.eos_token():
-#            break
+        if new_token == vocab.eos_token():
+            break
         res_tokens.append(new_token)
         feed_dict = {
             ph_input: [[new_token_id]],
             initial_state: state,
             ph_dropout: 1.0
         }
-        state, pred = session.run([final_state, outputs], feed_dict=feed_dict)
+        state, prob = session.run([final_state, prob_t], feed_dict=feed_dict)
     print(" ".join(res_tokens))
 
 
@@ -47,6 +58,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", required=True, help="File name with model to use")
     parser.add_argument("-s", "--sentence", help="Sentence to feed to model and continue")
+    parser.add_argument("-n", "--number", type=int, default=5, help="Count of sentence generations")
     args = parser.parse_args()
 
     log.info("Loading vocabulary")
@@ -62,5 +74,6 @@ if __name__ == "__main__":
         log.info("Model restored")
 
         if args.sentence:
-            test_sentence(data.vocab, session, ph_input, initial_state, outputs, final_state, args.sentence, ph_dropout)
+            for _ in range(args.number):
+                test_sentence(data.vocab, session, ph_input, initial_state, outputs, final_state, args.sentence, ph_dropout)
     pass

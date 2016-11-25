@@ -3,10 +3,9 @@ class Vocab:
         self.word_to_index = {}
         self.index_to_word = {}
         self.next_idx = 0
+        self._add_word(self.unk_token())
 
     def build(self, tokens):
-        if self.unk_token() not in self.word_to_index:
-            self._add_word(self.unk_token())
         for token in tokens:
             if token in self.word_to_index:
                 continue

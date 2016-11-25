@@ -32,6 +32,8 @@ def make_net(vocab_size, num_steps=NUM_STEPS, batch=BATCH):
     with tf.variable_scope("Net"):
         cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE, activation=tf.sigmoid)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=ph_dropout, output_keep_prob=ph_dropout)
+        # that's weird, but using xavier initializer stable gives -10..-15 to final perplexity
+        # maybe, something worth to investigate
         cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, vocab_size, EMBEDDING,
                                                initializer=tf.contrib.layers.xavier_initializer())
         cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, vocab_size)

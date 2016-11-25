@@ -415,7 +415,7 @@ TF implementation:
 2016-11-25 11:15:48,107 INFO   Net/RNN/OutputProjectionWrapper/Linear/Bias:0: (10000,)
 """
 
-if __name__ == "__main__1":
+if __name__ == "__main__":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()
@@ -472,7 +472,7 @@ if __name__ == "__main__1":
             saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__1":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()

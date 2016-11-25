@@ -114,7 +114,7 @@ if __name__ == "__main__":
                     writer.flush()
                     losses = []
                 global_step += 1
-            saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
+            saver.save(session, os.path.join(SAVE_DIR, args.name, "model"), global_step=epoch)
 
             # validation
             log.info("Running validation...")

@@ -269,24 +269,28 @@ class RNNLM_Model:
         with tf.variable_scope('InputDropout'):
             inputs = [tf.nn.dropout(x, self.dropout_placeholder) for x in inputs]
 
-        with tf.variable_scope('RNN') as scope:
-            self.initial_state = tf.zeros(
-                [self.config.batch_size, self.config.hidden_size])
-            state = self.initial_state
-            rnn_outputs = []
-            for tstep, current_input in enumerate(inputs):
-                if tstep > 0:
-                    scope.reuse_variables()
-                RNN_H = tf.get_variable(
-                    'HMatrix', [self.config.hidden_size, self.config.hidden_size])
-                RNN_I = tf.get_variable(
-                    'IMatrix', [self.config.embed_size, self.config.hidden_size])
-                RNN_b = tf.get_variable(
-                    'B', [self.config.hidden_size])
-                state = tf.nn.sigmoid(
-                    tf.matmul(state, RNN_H) + tf.matmul(current_input, RNN_I) + RNN_b)
-                rnn_outputs.append(state)
-            self.final_state = rnn_outputs[-1]
+        cell = tf.nn.rnn_cell.BasicRNNCell(self.config.hidden_size, activation=tf.sigmoid)
+        self.initial_state = cell.zero_state(self.config.batch_size, dtype=tf.float32)
+        rnn_outputs, self.final_state = tf.nn.rnn(cell, inputs, initial_state=self.initial_state)
+
+        # with tf.variable_scope('RNN') as scope:
+        #     self.initial_state = tf.zeros(
+        #         [self.config.batch_size, self.config.hidden_size])
+        #     state = self.initial_state
+        #     rnn_outputs = []
+        #     for tstep, current_input in enumerate(inputs):
+        #         if tstep > 0:
+        #             scope.reuse_variables()
+        #         RNN_H = tf.get_variable(
+        #             'HMatrix', [self.config.hidden_size, self.config.hidden_size])
+        #         RNN_I = tf.get_variable(
+        #             'IMatrix', [self.config.embed_size, self.config.hidden_size])
+        #         RNN_b = tf.get_variable(
+        #             'B', [self.config.hidden_size])
+        #         state = tf.nn.sigmoid(
+        #             tf.matmul(state, RNN_H) + tf.matmul(current_input, RNN_I) + RNN_b)
+        #         rnn_outputs.append(state)
+        #     self.final_state = rnn_outputs[-1]
 
         with tf.variable_scope('RNNDropout'):
             rnn_outputs = [tf.nn.dropout(x, self.dropout_placeholder) for x in rnn_outputs]
@@ -424,7 +428,7 @@ TF implementation:
 2016-11-25 11:15:48,107 INFO   Net/RNN/OutputProjectionWrapper/Linear/Bias:0: (10000,)
 """
 
-if __name__ == "__main__1":
+if __name__ == "__main__":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()
@@ -481,7 +485,7 @@ if __name__ == "__main__1":
             saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__1":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()

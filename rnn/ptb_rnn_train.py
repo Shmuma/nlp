@@ -436,7 +436,7 @@ TF implementation:
 2016-11-25 11:15:48,107 INFO   Net/RNN/OutputProjectionWrapper/Linear/Bias:0: (10000,)
 """
 
-if __name__ == "__main__":
+if __name__ == "__main__1":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()
@@ -493,7 +493,7 @@ if __name__ == "__main__":
             saver.save(session, os.path.join(SAVE_DIR, args.name, "model-epoch=%d" % epoch))
 
 
-if __name__ == "__main__1":
+if __name__ == "__main__":
     log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()
@@ -546,6 +546,7 @@ if __name__ == "__main__1":
         summaries = tf.merge_all_summaries()
         summaries_epoch = tf.merge_all_summaries('summary_epoch')
         session.run(tf.initialize_all_variables())
+        init_state = initial_state.eval()
 
         show_variables()
         global_step = 0
@@ -553,7 +554,7 @@ if __name__ == "__main__1":
         progress = 0.0
         while args.max_epoch is None or args.max_epoch > epoch:
             losses = []
-            state = initial_state.eval()
+            state = init_state
             for train_x, train_y in ptb_iterator(data.encoded_train, BATCH, NUM_STEPS):
                 loss, state, _ = session.run([loss_t, final_state, opt_t], feed_dict={
                     ph_input: train_x,
@@ -577,10 +578,12 @@ if __name__ == "__main__1":
             # validation
             log.info("Running validation...")
             losses = []
+            state = init_state
             for x, y in ptb_iterator(data.encoded_valid, BATCH, NUM_STEPS):
-                loss, = session.run([loss_t], feed_dict={
+                loss, state = session.run([loss_t, final_state], feed_dict={
                     ph_input: x,
-                    ph_labels: y
+                    ph_labels: y,
+                    initial_state: state,
                 })
                 losses.append(loss)
             m_perpl = np.exp(np.mean(losses))
@@ -594,10 +597,12 @@ if __name__ == "__main__1":
 
         log.info("Running test...")
         losses = []
+        state = init_state
         for x, y in ptb_iterator(data.encoded_test, BATCH, NUM_STEPS):
-            loss, = session.run([loss_t], feed_dict={
+            loss, state = session.run([loss_t, final_state], feed_dict={
                 ph_input: x,
-                ph_labels: y
+                ph_labels: y,
+                initial_state: state
             })
             losses.append(loss)
         log.info("Test perplexity: %s", np.exp(np.mean(losses)))

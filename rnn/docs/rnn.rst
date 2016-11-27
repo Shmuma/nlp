@@ -3,10 +3,10 @@ RNN Language model on PTB dataset
 
 The story
 ---------
-During taking excellent Stanform course CS224D_.
-.. _CS224D: http://cs224d.stanford.edu/
-taught by Richard Socher, I've
+During taking excellent Stanform course CS224D_ taught by Richard Socher, I've
 faced problem 2 from lab 2 (L2P2), which is about training simple RNN predicting next word in a sentence.
+
+.. _CS224D: http://cs224d.stanford.edu/
 
 Solution of this problem need to be implemented using tensorflow, but usage of high-level RNN classes
 is explicitly prohibited. It's good to get better understanding what's going on, but once you've got
@@ -34,6 +34,7 @@ input data. Otherwise, result can be better if we take pre-trained word embeddin
 data preparation step.
 
 To verify this, I've trained vector embeddings on PTB test data using FastText_ from Facebook.
+
 .. _FastText: https://github.com/facebookresearch/fastText
 
 Exact command which was used::
@@ -45,6 +46,7 @@ To use pre-trained vectors, we need to pass vec-file with vectors to ptb_rnn_tra
 ./ptb_rnn_train.py -n rnn-embed50-4-lower-lr -e data/ptb.train.txt-50.vec
 
 Resulting perplexity is here:
+
 .. image:: pre-trained-embeddings.png
 
 Result is worse, which can be explained by significant reduction of model's flexibility and size. By pre-training

@@ -18,6 +18,7 @@ BATCH = 64
 NUM_STEPS = 10
 EMBEDDING = 50
 CELL_SIZE = 100
+LAYERS_COUNT = 1
 LR = 0.001
 DROPOUT = 0.9
 
@@ -31,6 +32,7 @@ def make_net(vocab_size, num_steps=NUM_STEPS, batch=BATCH, embeddings=None):
 
     with tf.variable_scope("Net"):
         cell = tf.nn.rnn_cell.BasicRNNCell(CELL_SIZE, activation=tf.sigmoid)
+        cell = tf.nn.rnn_cell.MultiRNNCell([cell]*LAYERS_COUNT, state_is_tuple=False)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=ph_dropout, output_keep_prob=ph_dropout)
         # that's weird, but using xavier initializer stable gives -10..-15 to final perplexity
         # maybe, something worth to investigate
@@ -76,7 +78,6 @@ if __name__ == "__main__":
         ph_input, initial_state, outputs, final_state, ph_dropout = make_net(data.vocab.size(),
                                                                              embeddings=args.embeddings)
 
-#        targets = tf.split(split_dim=1, num_split=NUM_STEPS, value=ph_labels)
         output = tf.reshape(tf.concat(1, outputs), [-1, data.vocab.size()])
         log.info("Loss info:")
         log.info("Output: %s", output)

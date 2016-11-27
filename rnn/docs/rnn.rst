@@ -3,8 +3,8 @@ RNN Language model on PTB dataset
 
 The story
 ---------
-During taking excellent
-.. _Stanford course CS224D: http://cs224d.stanford.edu/
+During taking excellent Stanform course CS224D_.
+.. _CS224D: http://cs224d.stanford.edu/
 taught by Richard Socher, I've
 faced problem 2 from lab 2 (L2P2), which is about training simple RNN predicting next word in a sentence.
 
@@ -33,8 +33,8 @@ In CS224D it was noted that it's worth to train embeddings during model learning
 input data. Otherwise, result can be better if we take pre-trained word embedding vectors or train them first as
 data preparation step.
 
-To verify this, I've trained vector embeddings on PTB test data using
-.. _FastText from Facebook: https://github.com/facebookresearch/fastText
+To verify this, I've trained vector embeddings on PTB test data using FastText_ from Facebook.
+.. _FastText: https://github.com/facebookresearch/fastText
 
 Exact command which was used::
 

@@ -12,7 +12,7 @@ import logging as log
 import sys
 sys.path.append("..")
 
-from lib import ptb, vocab
+from lib import ptb, vocab, rnn
 
 BATCH = 64
 NUM_STEPS = 10
@@ -25,7 +25,7 @@ LOG_DIR = "logs"
 SAVE_DIR = "saves"
 
 
-def make_net(vocab_size, num_steps=NUM_STEPS, batch=BATCH):
+def make_net(vocab_size, num_steps=NUM_STEPS, batch=BATCH, embeddings=None):
     ph_input = tf.placeholder(tf.int32, shape=(None, num_steps), name="input")
     ph_dropout = tf.placeholder(tf.float32, name='Dropout')
 
@@ -34,8 +34,11 @@ def make_net(vocab_size, num_steps=NUM_STEPS, batch=BATCH):
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=ph_dropout, output_keep_prob=ph_dropout)
         # that's weird, but using xavier initializer stable gives -10..-15 to final perplexity
         # maybe, something worth to investigate
-        cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, vocab_size, EMBEDDING,
-                                               initializer=tf.contrib.layers.xavier_initializer())
+        if embeddings is None:
+            cell = tf.nn.rnn_cell.EmbeddingWrapper(cell, vocab_size, EMBEDDING,
+                                                   initializer=tf.contrib.layers.xavier_initializer())
+        else:
+            cell = rnn.EmbeddingFastTextWrapper(cell, embeddings)
         cell = tf.nn.rnn_cell.OutputProjectionWrapper(cell, vocab_size)
         initial_state = cell.zero_state(batch, dtype=tf.float32)
 
@@ -51,6 +54,8 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--name", default="rnn", help="Name of the run used in saving logs and models")
     parser.add_argument("--max-epoch", type=int, default=16,
                         help="If specified, stop after given amount of epoches, default=16")
+    parser.add_argument("-e", "--embeddings", help="File name with embeddings to be used, if not specified, "
+                                                   "embeddings will be trained")
     args = parser.parse_args()
 
     os.makedirs(os.path.join(LOG_DIR, args.name), exist_ok=True)
@@ -64,7 +69,8 @@ if __name__ == "__main__":
     with tf.Session() as session:
         ph_labels = tf.placeholder(tf.int32, shape=(None, NUM_STEPS), name="labels")
 
-        ph_input, initial_state, outputs, final_state, ph_dropout = make_net(data.vocab.size())
+        ph_input, initial_state, outputs, final_state, ph_dropout = make_net(data.vocab.size(),
+                                                                             embeddings=args.embeddings)
 
 #        targets = tf.split(split_dim=1, num_split=NUM_STEPS, value=ph_labels)
         output = tf.reshape(tf.concat(1, outputs), [-1, data.vocab.size()])

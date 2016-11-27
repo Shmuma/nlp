@@ -14,9 +14,9 @@ understanding of internal machinery, it's not very useful for large, complicated
 bidirectional RNN or stacked LSTMs. After having working low-level solution,
 I've realized that  there are lot to investigate there, for example:
 
-1. Pre-training word embeddings (original version trains embeddings on the fly),
+1. [x] Pre-training word embeddings (original version trains embeddings on the fly),
 2. Use larger and deeper model,
-3. Use different activation functions (in L2P2 sigmoid was used),
+3. [x] Use different activation functions (in L2P2 sigmoid was used),
 4. Play with LSTM/GRU,
 5. Use more unrolling of RNN,
 6. etc.
@@ -55,3 +55,20 @@ fixed.
 
 Maybe, it's worth to try appropriate increase of model's size, but I'm not ready for this yet (it should be
 done as separate experiment, fixing other variables)
+
+
+Activation functions
+--------------------
+In L2P2 sigmoid activation was used, which surprised me a bit. I've played with functions a bit:
+1. tanh
+2. relu
+3. relu6
+4. elu
+
+Result:
+
+.. image:: activation-functions.png
+
+**Summary**: relu/relu6 is behaving the worst (I think it's due to expanding/vanishid gradient problem),
+tanh (default option in BasicRNNCell) is the winner, elu is a bit better than tanh, but starts to overfit sooner.
+

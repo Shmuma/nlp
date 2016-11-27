@@ -3,7 +3,9 @@ RNN Language model on PTB dataset
 
 The story
 ---------
-During taking excellent Stanford course CS224D taught by Richard Socher http://cs224d.stanford.edu/, I've
+During taking excellent
+.. _Stanford course CS224D: http://cs224d.stanford.edu/
+taught by Richard Socher, I've
 faced problem 2 from lab 2 (L2P2), which is about training simple RNN predicting next word in a sentence.
 
 Solution of this problem need to be implemented using tensorflow, but usage of high-level RNN classes
@@ -21,3 +23,33 @@ I've realized that  there are lot to investigate there, for example:
 
 After playing with my L2P2 solution and wasting lots of time finding stupid bugs, I've decided to reimplement
 the whole problem from scratch using latest functionality of TensorFlow.
+
+TODO: some text about reimplementation
+
+
+Pre-trained word embeddings
+---------------------------
+In CS224D it was noted that it's worth to train embeddings during model learning makes sense when there are lots of
+input data. Otherwise, result can be better if we take pre-trained word embedding vectors or train them first as
+data preparation step.
+
+To verify this, I've trained vector embeddings on PTB test data using
+.. _FastText from Facebook: https://github.com/facebookresearch/fastText
+
+Exact command which was used::
+
+    fasttext skipgram -input ptb.train.txt -output ptb.train.txt-50 -minCount 1 -epoch 1000 -dim 50
+
+To use pre-trained vectors, we need to pass vec-file with vectors to ptb_rnn_train.py using -e option::
+
+./ptb_rnn_train.py -n rnn-embed50-4-lower-lr -e data/ptb.train.txt-50.vec
+
+Resulting perplexity is here:
+.. image:: pre-trained-embeddings.png
+
+Result is worse, which can be explained by significant reduction of model's flexibility and size. By pre-training
+embeddings, we've fixed about 50*10000=500k parameters (~1/3 of whole model), which were used before, but now become
+fixed.
+
+Maybe, it's worth to try appropriate increase of model's size, but I'm not ready for this yet (it should be
+done as separate experiment, fixing other variables)

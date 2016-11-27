@@ -62,7 +62,11 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(SAVE_DIR, args.name), exist_ok=True)
 
     log.info("Loading PTB dataset...")
-    data = ptb.PTBDataset("data", vocab.Vocab(), batch_size=BATCH)
+    if args.embeddings:
+        v = vocab.FastTextVocab(args.embeddings)
+    else:
+        v = vocab.Vocab()
+    data = ptb.PTBDataset("data", v, batch_size=BATCH)
     data.load_dataset()
     log.info("Loaded: %s", data)
 

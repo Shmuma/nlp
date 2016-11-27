@@ -72,3 +72,11 @@ Result:
 **Summary**: relu/relu6 is behaving the worst (I think it's due to expanding/vanishid gradient problem),
 tanh (default option in BasicRNNCell) is the winner, elu is a bit better than tanh, but starts to overfit sooner.
 
+
+Model size
+----------
+There are two ways to vary model size: width and depth (or both). Depth means more layers
+inside the cell, width is just size of the cell itself.
+
+Amount of layers in default setup doesn't make much effect on resulting quality. Larger cells
+tend to overfit very quickly.

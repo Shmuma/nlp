@@ -31,7 +31,7 @@ def make_net(vocab_size, num_steps=NUM_STEPS, batch=BATCH, embeddings=None):
     ph_dropout = tf.placeholder(tf.float32, name='Dropout')
 
     with tf.variable_scope("Net"):
-        cell = tf.nn.rnn_cell.BasicLSTMCell(CELL_SIZE)
+        cell = tf.nn.rnn_cell.BasicLSTMCell(CELL_SIZE, state_is_tuple=False)
         cell = tf.nn.rnn_cell.MultiRNNCell([cell]*LAYERS_COUNT, state_is_tuple=False)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=ph_dropout, output_keep_prob=ph_dropout)
         # that's weird, but using xavier initializer stable gives -10..-15 to final perplexity

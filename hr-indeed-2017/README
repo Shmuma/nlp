@@ -2,3 +2,9 @@ Run ./run-final.sh which will train 5 models sequentially
 
 After that, to generate tags for test file, run: ./gen-tags-final.sh
 
+Scripts assumes gzipped train and test files in data subdir.
+You'll also need glove embeddings from here: https://nlp.stanford.edu/projects/glove/
+
+Take 6B 200-dim embeddings file, put locally and put your path in runs/simple-200d.json
+
+Full training takes ~7.5 hours on GTX 1080, so, be patient :).

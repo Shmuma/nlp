@@ -1,0 +1,5 @@
+Run ./run.sh which will train 5 models sequentially
+
+After that, to generate tags for test file, run:
+
+./use_model.py -r runs/simple.json -m runs/models.json -o tags.tsv

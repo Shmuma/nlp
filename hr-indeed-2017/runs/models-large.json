@@ -1,0 +1,7 @@
+{
+  "time": "logs/t2-time/model-f1=0.6975.m5",
+  "salary": "logs/t2-salary/model-f1=0.7451.m5",
+  "edu": "logs/t2-edu/model-f1=0.6719.m5",
+  "exp": "logs/t2-exp/model-f1=0.9000.m5",
+  "supervise": "logs/t2-supervise/model-f1=0.6528.m5"
+}

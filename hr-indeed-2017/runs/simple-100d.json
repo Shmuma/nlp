@@ -1,0 +1,4 @@
+{
+  "embeddings": "~/work/data/experiments/glove.6B.100d.txt",
+  "epoches": 400
+}

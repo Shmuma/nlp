@@ -1,0 +1,7 @@
+{
+  "time": "logs/fin-time/model-best.m5",
+  "salary": "logs/fin-salary/model-best.m5",
+  "edu": "logs/fin-edu/model-best.m5",
+  "exp": "logs/fin-exp/model-best.m5",
+  "supervise": "logs/fin-supervise/model-best.m5"
+}
